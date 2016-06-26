@@ -3,30 +3,25 @@
 ---------------------------------------
 
 preguntas = [
-    (Pregunta 1 2),
-    (Pregunta 1 2),
-    (Pregunta 1 2),
-    (Pregunta 1 2),
-    (Pregunta 1 2) ]
+      (Pregunta 1 2)
+    , (Pregunta 1 2)
+    , (Pregunta 1 2)
+    , (Pregunta 1 2)
+    , (Pregunta 1 2) ]
 
 modelos = [
-    (Modelo [1, 2, 3, 4, 5]),
-    (Modelo [5, 4, 3, 2, 1])]
+      (Modelo [1, 2, 3, 4, 5])
+    , (Modelo [5, 4, 3, 2, 1])]
 
 test = (Test preguntas modelos)
 
 respuestas = [
-    (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])
+      (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])
     , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0), (Respuesta 0)])
     , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 2), (Respuesta 1), (Respuesta 2), (Respuesta 0), (Respuesta 0)]) ]
 
-correccion = (corregir_todos test respuestas)
+correccion = (corrige_todos test respuestas)
 correccion_individual = (corrige test (respuestas !! 1))
-
-corregir_todos :: Test -> [RespuestaEstudiante] -> [Correccion]
-corregir_todos _ [] = []
-corregir_todos test (x: xs) =
-    (corrige test x) : corregir_todos test xs
 
 ---------------------------------------
 -- DATA STRUCTURES --------------------
@@ -86,38 +81,42 @@ data Respuesta = Respuesta {
 {--
 En nuestro programa tenemos que poder corregir los tests de nuestros estudiantes.
 Para ello necesitamos tener una función que reciba el test y las respuestas dadas
-por el estudiante. Como cada estudiante puede responder un modelo de examen diferente.
+por el estudiante.
 
-Entonces vamos a necesitar por un lado obtener una lista de preguntas que sigan
-el orden del modelo de examen para posteriormente utilizar nuestra función notaEstudiante
-que recibe una lista de preguntas (las del modelo del examen) y una lista de respuestas
-dadas por el usuario y devuelve la nota obtenida.
+Como cada estudiante puede responder un modelo de examen diferente. Entonces
+vamos a necesitar por un lado obtener una lista de preguntas que sigan el orden
+del modelo de examen que está respondiendo el usuario para posteriormente utilizar
+nuestra función notaEstudiante que recibe una lista de preguntas (las del modelo
+del examen) y una lista de respuestas dadas por el usuario y devuelve la nota obtenida.
 
 Con el resultado de dicha función, vamos a poder obtener la corrección del usuario:
 Tanto: identificador del alumno, puntuaciónTotal y puntuación sobre 10.
-
 --}
 
 data Correccion = Correccion {
     identificadorAlumno :: String,
     puntuacionTotal :: Float,
     puntuacionSobre10 :: Float
+
+    -- correctas :: [Int],
+    -- erroneas :: [Int],
+    -- blancas :: [Int]
+
 }  deriving (Show)
+
+
+corrige_todos :: Test -> [RespuestaEstudiante] -> [Correccion]
+corrige_todos _ [] = []
+corrige_todos test (x: xs) =
+    corrige test x : corrige_todos test xs
 
 corrige :: Test -> RespuestaEstudiante -> Correccion
 corrige (Test preguntas modelos) (RespuestaEstudiante identificador indiceModelo respuestas) =
         (Correccion
-                identificador
-                (notaEstudiante (cogerPreguntasDelModelo preguntas (modelos !! (indiceModelo-1))) respuestas)
-                (puntuacion10 (length preguntas) (notaEstudiante (cogerPreguntasDelModelo preguntas (modelos !! (indiceModelo-1))) respuestas))
+            identificador
+            (notaEstudiante (cogerPreguntasDelModelo preguntas (modelos !! (indiceModelo-1))) respuestas)
+            (puntuacion10 (length preguntas) (notaEstudiante (cogerPreguntasDelModelo preguntas (modelos !! (indiceModelo-1))) respuestas))
         )
-
-puntuacion10 :: Int -> Float -> Float
-puntuacion10 numeroPreguntas notaObtenida =
-    {-- Número máximo de puntos posibles sería el numero de preguntas (ganas 1 punto por cada pregunta)
-        Regla de 3:  maxPuntosPosible ______ 10 nota maxima
-                      puntosObtenidos ______ X nota sobre 10 --}
-    (10.0 * notaObtenida) / fromIntegral numeroPreguntas
 
 {--
 Para calcular la nota de un estudiante vamos a necesitar dos funciones:
@@ -144,6 +143,11 @@ Para calcular la nota de un estudiante vamos a necesitar dos funciones:
         * 1 si es correcta
         * 0 si no la ha contestado
         * -1/(N-1) si es incorrecta
+
+3. NotaSobre10:
+  Transforma la nota obtenida en una nota sobre 10.
+  Para ello necesita el número de preguntas y la nota sacada para luego
+  aplicar una regla de 3.
 --}
 
 notaEstudiante :: [Pregunta] -> [Respuesta] -> Float
@@ -157,6 +161,13 @@ notaPregunta (Pregunta respuestaCorrecta opciones) (Respuesta respuestaEstudiant
         | respuestaEstudiante == 0                  = 0.0 -- Respuesta en Blanco
         | respuestaEstudiante == respuestaCorrecta  = 1.0 -- Respuesta correcta
         | otherwise                                 = (-1.0) / (fromIntegral opciones - 1.0) -- Respuesta incorrecta, fórmula -1/(N-1) [Siendo N el número de alternativas]
+
+puntuacion10 :: Int -> Float -> Float
+puntuacion10 numeroPreguntas notaObtenida =
+        {-- Número máximo de puntos posibles sería el numero de preguntas (ganas 1 punto por cada pregunta)
+        Regla de 3:  maxPuntosPosible ______ 10 nota maxima
+                      puntosObtenidos ______ X nota sobre 10 --}
+        (10.0 * notaObtenida) / fromIntegral numeroPreguntas
 
 {--
 Como hemos podido observar en la función anterior, necesitamos uan lista de preguntas
@@ -203,7 +214,7 @@ cogerPreguntasDadoOrden (preguntas) (indice:restoIndices) =
 
 {--
 Estadísticas
-pregunta m ́as veces (respectivamente menos veces) dejada en blanco.
+pregunta mas veces (respectivamente menos veces) dejada en blanco.
 --}
 
 data Estadisticas = Estadisticas {
