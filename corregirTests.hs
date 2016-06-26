@@ -17,11 +17,13 @@ test = (Test preguntas modelos)
 
 respuestas = [
       (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])
-    , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0), (Respuesta 0)])
-    , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 2), (Respuesta 1), (Respuesta 2), (Respuesta 0), (Respuesta 0)]) ]
+    , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 2), (Respuesta 2), (Respuesta 2), (Respuesta 2), (Respuesta 2)])
+    , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])]
 
 correccion = (corrige_todos test respuestas)
 correccion_individual = (corrige test (respuestas !! 1))
+
+estadisticas_totales = estadisticas test respuestas
 
 ---------------------------------------
 -- DATA STRUCTURES --------------------
@@ -104,7 +106,6 @@ data Correccion = Correccion {
 
 }  deriving (Show)
 
-
 corrige_todos :: Test -> [RespuestaEstudiante] -> [Correccion]
 corrige_todos _ [] = []
 corrige_todos test (x: xs) =
@@ -127,6 +128,21 @@ cogerPuntuacionTotal (Correccion _ puntuacion _) = puntuacion
 
 cogerPuntuacionSobre10 :: Correccion -> Float
 cogerPuntuacionSobre10 (Correccion _ _ puntuacion10) = puntuacion10
+
+{--
+  Funciones auxiliares para las estadísticas.
+   1. puntuacionMedia = coger todas las correcciones, quedarte con el campo
+      puntuacionTotal y sumarlo todos
+--}
+
+calcularPuntuacionMedia :: [Correccion] -> Float
+calcularPuntuacionMedia correccion =
+    (sumarPuntuaciones correccion) / fromIntegral( length(correccion) )
+
+sumarPuntuaciones :: [Correccion] -> Float
+sumarPuntuaciones [] = 0.0
+sumarPuntuaciones (x:xs) =
+    (cogerPuntuacionSobre10 x) + sumarPuntuaciones xs
 
 {--
 Para calcular la nota de un estudiante vamos a necesitar dos funciones:
@@ -174,9 +190,9 @@ notaPregunta (Pregunta respuestaCorrecta opciones) (Respuesta respuestaEstudiant
 
 puntuacion10 :: Int -> Float -> Float
 puntuacion10 numeroPreguntas notaObtenida
-        {-- Número máximo de puntos posibles sería el numero de preguntas (ganas 1 punto por cada pregunta)
-        Regla de 3:  maxPuntosPosible ______ 10 nota maxima
-                      puntosObtenidos ______ X nota sobre 10 --}
+        -- Número máximo de puntos posibles sería el numero de preguntas (ganas 1 punto por cada pregunta)
+        -- maxPuntosPosible ______ 10 nota maxima
+        -- puntosObtenidos ______ X nota sobre 10 --}
         | notaTotal <= 0      = 0
         | otherwise           = notaTotal
         where notaTotal = (10.0 * notaObtenida) / fromIntegral numeroPreguntas
@@ -251,12 +267,12 @@ data Estadisticas = Estadisticas {
     preguntaMasContestada :: Int,
     preguntaMenosContestada :: Int
 
-}
+} deriving (Show)
 
 estadisticas :: Test -> [RespuestaEstudiante] -> Estadisticas
-estadisticas (Test preguntas modelos) respuestas =
+estadisticas test respuestas =
     (Estadisticas
-        10.0
+        (calcularPuntuacionMedia correcciones)
         10.0
 
         0
@@ -277,3 +293,4 @@ estadisticas (Test preguntas modelos) respuestas =
         3
         1
     )
+    where correcciones = (corrige_todos test respuestas)
