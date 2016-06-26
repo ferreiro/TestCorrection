@@ -16,8 +16,9 @@ modelos = [
 test = (Test preguntas modelos)
 
 respuestas = [
-      (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])
-    , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 2), (Respuesta 2), (Respuesta 2), (Respuesta 2), (Respuesta 2)])
+      (RespuestaEstudiante "ABC-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])
+    , (RespuestaEstudiante "WWW-D" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)])
+    , (RespuestaEstudiante "DSC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
     , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])]
 
 correccion = (corrige_todos test respuestas)
@@ -183,6 +184,27 @@ cogerPuntuacionTotal (Correccion _ puntuacion _) = puntuacion
 cogerPuntuacionSobre10 :: Correccion -> Float
 cogerPuntuacionSobre10 (Correccion _ _ puntuacion10) = puntuacion10
 
+estaSupenso :: Correccion -> Bool
+estaSupenso correccion = (cogerPuntuacionSobre10 correccion) < 5.0
+
+estaAprobado :: Correccion -> Bool
+estaAprobado correccion
+    | puntuacion >= 5.0 && puntuacion < 7.0     = True
+    | otherwise                                 = False
+    where puntuacion = (cogerPuntuacionSobre10 correccion)
+
+estaNotable :: Correccion -> Bool
+estaNotable correccion
+    | puntuacion >= 7.0 && puntuacion < 9.0     = True
+    | otherwise                                 = False
+    where puntuacion = (cogerPuntuacionSobre10 correccion)
+
+estaSobresaliente :: Correccion -> Bool
+estaSobresaliente correccion
+    | puntuacion >= 9.0                         = True
+    | otherwise                                 = False
+    where puntuacion = (cogerPuntuacionSobre10 correccion)
+
 {--
 Funciones auxiliares para las estadísticas:
 1. calcularPuntuacionMedia.
@@ -197,10 +219,39 @@ calcularPuntuacionMedia :: [Correccion] -> Float
 calcularPuntuacionMedia correccion =
     (sumarPuntuaciones correccion) / fromIntegral( length(correccion) )
 
+-- Función auxiliar para calcularPuntuacionMedia
 sumarPuntuaciones :: [Correccion] -> Float
 sumarPuntuaciones [] = 0.0
 sumarPuntuaciones (x:xs) =
     (cogerPuntuacionSobre10 x) + sumarPuntuaciones xs
+
+calcularSuspensos :: [Correccion] -> Int
+calcularSuspensos [] = 0
+calcularSuspensos (x:xs)
+    | suspenso == True     = 1 + (calcularSuspensos xs)
+    | otherwise            = 0 + (calcularSuspensos xs)
+    where suspenso = estaSupenso x
+
+calcularAprobados :: [Correccion] -> Int
+calcularAprobados [] = 0
+calcularAprobados (x:xs)
+    | aprobado == True     = 1 + (calcularAprobados xs)
+    | otherwise            = 0 + (calcularAprobados xs)
+    where aprobado = estaAprobado x
+
+calcularNotables :: [Correccion] -> Int
+calcularNotables [] = 0
+calcularNotables (x:xs)
+    | notable == True       = 1 + (calcularNotables xs)
+    | otherwise             = 0 + (calcularNotables xs)
+    where notable = estaNotable x
+
+calcularSobresalientes :: [Correccion] -> Int
+calcularSobresalientes [] = 0
+calcularSobresalientes (x:xs)
+    | sobresaliente == True   = 1 + (calcularSobresalientes xs)
+    | otherwise               = 0 + (calcularSobresalientes xs)
+    where sobresaliente = estaSobresaliente x
 
 
 
@@ -282,10 +333,10 @@ estadisticas test respuestas =
         (calcularPuntuacionMedia correcciones)
         10.0
 
-        0
-        0
-        0
-        0
+        (calcularSuspensos correcciones)
+        (calcularAprobados correcciones)
+        (calcularNotables correcciones)
+        (calcularSobresalientes correcciones)
 
         0.0
         0.0
