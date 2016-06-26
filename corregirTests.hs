@@ -119,6 +119,16 @@ corrige (Test preguntas modelos) (RespuestaEstudiante identificador indiceModelo
         )
 
 {--
+Métodos para coger atributos de Corrección.
+--}
+
+cogerPuntuacionTotal :: Correccion -> Float
+cogerPuntuacionTotal (Correccion _ puntuacion _) = puntuacion
+
+cogerPuntuacionSobre10 :: Correccion -> Float
+cogerPuntuacionSobre10 (Correccion _ _ puntuacion10) = puntuacion10
+
+{--
 Para calcular la nota de un estudiante vamos a necesitar dos funciones:
 
 1. notaEstudiante:
@@ -163,11 +173,13 @@ notaPregunta (Pregunta respuestaCorrecta opciones) (Respuesta respuestaEstudiant
         | otherwise                                 = (-1.0) / (fromIntegral opciones - 1.0) -- Respuesta incorrecta, fórmula -1/(N-1) [Siendo N el número de alternativas]
 
 puntuacion10 :: Int -> Float -> Float
-puntuacion10 numeroPreguntas notaObtenida =
+puntuacion10 numeroPreguntas notaObtenida
         {-- Número máximo de puntos posibles sería el numero de preguntas (ganas 1 punto por cada pregunta)
         Regla de 3:  maxPuntosPosible ______ 10 nota maxima
                       puntosObtenidos ______ X nota sobre 10 --}
-        (10.0 * notaObtenida) / fromIntegral numeroPreguntas
+        | notaTotal <= 0      = 0
+        | otherwise           = notaTotal
+        where notaTotal = (10.0 * notaObtenida) / fromIntegral numeroPreguntas
 
 {--
 Como hemos podido observar en la función anterior, necesitamos uan lista de preguntas
