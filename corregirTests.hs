@@ -2,19 +2,31 @@
 -- EJEMPLOS ---------------------------
 ---------------------------------------
 
-p1 = (Pregunta 2 5)
-p2 = (Pregunta 1 3)
-preguntas = [p1, p2, p1, p2, p1]
+preguntas = [
+    (Pregunta 1 2),
+    (Pregunta 1 2),
+    (Pregunta 1 2),
+    (Pregunta 1 2),
+    (Pregunta 1 2) ]
 
-m1 = (Modelo [1, 2, 1, 2, 1])
-m2 = (Modelo [2])
-modelos = [m1, m2]
+modelos = [
+    (Modelo [1, 2, 3, 4, 5]),
+    (Modelo [5, 4, 3, 2, 1])]
 
 test = (Test preguntas modelos)
 
---respuestaEstudiante = (RespuestaEstudiante "414992032-W" 2 [(Respuesta 3)])
-respuestaEstudiante = (RespuestaEstudiante "414992032-W" 1 [(Respuesta 2), (Respuesta 1), (Respuesta 1), (Respuesta 0), (Respuesta 0)])
-correccion = (corrige test respuestaEstudiante)
+respuestas = [
+    (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])
+    , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0), (Respuesta 0)])
+    , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 2), (Respuesta 1), (Respuesta 2), (Respuesta 0), (Respuesta 0)]) ]
+
+correccion = (corregir_todos test respuestas)
+correccion_individual = (corrige test (respuestas !! 1))
+
+corregir_todos :: Test -> [RespuestaEstudiante] -> [Correccion]
+corregir_todos _ [] = []
+corregir_todos test (x: xs) =
+    (corrige test x) : corregir_todos test xs
 
 ---------------------------------------
 -- DATA STRUCTURES --------------------
@@ -64,7 +76,7 @@ Seguiré la siguiente convención para los valores de las respuestas:
 data RespuestaEstudiante = RespuestaEstudiante {
     identificador :: String,
     modelo :: Int,
-    respuestas :: [Respuesta]
+    respuestas_estudiante :: [Respuesta]
 } deriving (Show)
 
 data Respuesta = Respuesta {
@@ -100,13 +112,12 @@ corrige (Test preguntas modelos) (RespuestaEstudiante identificador indiceModelo
                 (puntuacion10 (length preguntas) (notaEstudiante (cogerPreguntasDelModelo preguntas (modelos !! (indiceModelo-1))) respuestas))
         )
 
--- Puntuación Sobre 10.
--- El numero máximo de puntos posibles sería el numero de preguntas por 1 cada pregunta
--- Regla de 3:  maxPuntosPosible ______ 10 nota maxima
---              puntosObtenidos _______ X nota sobre 10
 puntuacion10 :: Int -> Float -> Float
 puntuacion10 numeroPreguntas notaObtenida =
-    (10 * notaObtenida) / fromIntegral numeroPreguntas
+    {-- Número máximo de puntos posibles sería el numero de preguntas (ganas 1 punto por cada pregunta)
+        Regla de 3:  maxPuntosPosible ______ 10 nota maxima
+                      puntosObtenidos ______ X nota sobre 10 --}
+    (10.0 * notaObtenida) / fromIntegral numeroPreguntas
 
 {--
 Para calcular la nota de un estudiante vamos a necesitar dos funciones:
@@ -189,3 +200,57 @@ cogerPreguntasDadoOrden [] _ = []
 cogerPreguntasDadoOrden _ [] = []
 cogerPreguntasDadoOrden (preguntas) (indice:restoIndices) =
     (preguntas !! (indice - 1)) : (cogerPreguntasDadoOrden preguntas restoIndices)-- coger la pregunta
+
+{--
+Estadísticas
+pregunta m ́as veces (respectivamente menos veces) dejada en blanco.
+--}
+
+data Estadisticas = Estadisticas {
+    puntuacionMedia :: Float,
+    mediaPreguntasRespondidas :: Float,
+
+    numeroSuspensos :: Int, -- nota < 5
+    numeroAprobados :: Int, -- 5 <= nota < 7
+    numeroNotables  :: Int, -- 7 <= nota < 9
+    numeroSobresalientes :: Int, -- 9 <= nota
+
+    frecAbsRespuestasCorrectas :: Float,
+    frecRelRespuestasCorrectas :: Float,
+    frecAbsRespuestasErroneas :: Float,
+    frecRelRespuestasErroneas :: Float,
+    frecAbsRespuestasBlancos :: Float,
+    frecRelRespuestasBlancos :: Float,
+
+    preguntaMejorResultado :: Int,
+    preguntaPeorResultado :: Int,
+
+    preguntaMasContestada :: Int,
+    preguntaMenosContestada :: Int
+
+}
+
+estadisticas :: Test -> [RespuestaEstudiante] -> Estadisticas
+estadisticas (Test preguntas modelos) respuestas =
+    (Estadisticas
+        10.0
+        10.0
+
+        0
+        0
+        0
+        0
+
+        0.0
+        0.0
+        0.0
+        0.0
+        0.0
+        0.0
+
+        3
+        1
+
+        3
+        1
+    )
