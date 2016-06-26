@@ -120,31 +120,6 @@ corrige (Test preguntas modelos) (RespuestaEstudiante identificador indiceModelo
         )
 
 {--
-Métodos para coger atributos de Corrección.
---}
-
-cogerPuntuacionTotal :: Correccion -> Float
-cogerPuntuacionTotal (Correccion _ puntuacion _) = puntuacion
-
-cogerPuntuacionSobre10 :: Correccion -> Float
-cogerPuntuacionSobre10 (Correccion _ _ puntuacion10) = puntuacion10
-
-{--
-  Funciones auxiliares para las estadísticas.
-   1. puntuacionMedia = coger todas las correcciones, quedarte con el campo
-      puntuacionTotal y sumarlo todos
---}
-
-calcularPuntuacionMedia :: [Correccion] -> Float
-calcularPuntuacionMedia correccion =
-    (sumarPuntuaciones correccion) / fromIntegral( length(correccion) )
-
-sumarPuntuaciones :: [Correccion] -> Float
-sumarPuntuaciones [] = 0.0
-sumarPuntuaciones (x:xs) =
-    (cogerPuntuacionSobre10 x) + sumarPuntuaciones xs
-
-{--
 Para calcular la nota de un estudiante vamos a necesitar dos funciones:
 
 1. notaEstudiante:
@@ -197,6 +172,38 @@ puntuacion10 numeroPreguntas notaObtenida
         | otherwise           = notaTotal
         where notaTotal = (10.0 * notaObtenida) / fromIntegral numeroPreguntas
 
+
+{--
+Getters - Métodos para coger atributos de corrección.
+--}
+
+cogerPuntuacionTotal :: Correccion -> Float
+cogerPuntuacionTotal (Correccion _ puntuacion _) = puntuacion
+
+cogerPuntuacionSobre10 :: Correccion -> Float
+cogerPuntuacionSobre10 (Correccion _ _ puntuacion10) = puntuacion10
+
+{--
+Funciones auxiliares para las estadísticas:
+1. calcularPuntuacionMedia.
+    Calcula las puntaciones media de toda la lista de correcciones.
+    Para ello, primero llama a "sumarPuntuaciones", y luego divide
+    la suma total entre el número de respuestas al test (esto lo podemos
+    sacar cogiendo la longitud de correccion)
+
+--}
+
+calcularPuntuacionMedia :: [Correccion] -> Float
+calcularPuntuacionMedia correccion =
+    (sumarPuntuaciones correccion) / fromIntegral( length(correccion) )
+
+sumarPuntuaciones :: [Correccion] -> Float
+sumarPuntuaciones [] = 0.0
+sumarPuntuaciones (x:xs) =
+    (cogerPuntuacionSobre10 x) + sumarPuntuaciones xs
+
+
+
 {--
 Como hemos podido observar en la función anterior, necesitamos uan lista de preguntas
 para poder comprobar si la lista de respuestas del usuario es correcta.
@@ -247,7 +254,7 @@ pregunta mas veces (respectivamente menos veces) dejada en blanco.
 
 data Estadisticas = Estadisticas {
     puntuacionMedia :: Float,
-    mediaPreguntasRespondidas :: Float,
+    numeroMedioPreguntasRespondidas :: Float,
 
     numeroSuspensos :: Int, -- nota < 5
     numeroAprobados :: Int, -- 5 <= nota < 7
