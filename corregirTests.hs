@@ -198,7 +198,7 @@ corrige (Test preguntas modelos) (RespuestaTest identificador indiceModelo respu
 
 {--
 Métodos auxiliares para obtener atributos
-del tipo de Dato Corrección
+del tipo de Dato "Corrección"
 --}
 
 cogerTipoRespuesta :: Correccion -> [Int]
@@ -215,12 +215,12 @@ cogerPuntuacionSobre10 (Correccion _ _ puntuacion10 _) = puntuacion10
 
 {--
 A continuación vamos a obtener una lista de preguntas que seguirá el
-orden de las permutaciones que tiene el modelo. Con esta lista de preguntas,
+orden de las permutaciones que tiene el modelo. Gracias a lista de preguntas,
 podemos corregir las respuestas dadas por el estudiante.
 
-El modelo cabe recordar es una lista de enteros que representan las permutaciones
-de las preguntas del test. Por tanto, en esta parte del programa, tendremos
-que hacer la conversión para obtener la lista de preguntas.
+El modelo de examen, cabe recordar que es una lista de enteros que
+representan las permutaciones de las preguntas del test. Por tanto, en esta parte del
+programa, tendremos que hacer la conversión para obtener la lista de preguntas.
 --}
 
 -- Función Wrapper que devolverá una lista de preguntas
@@ -240,33 +240,25 @@ cogerPreguntasDadoOrden (preguntas) (indice:restoIndices) =
 {--
 Para calcular la nota de un estudiante vamos a necesitar dos funciones:
 
-1. notaEstudiante:
-  Esta función calcula la nota final obtenida por el estudiante.
+1. notaEstudiante: calcula la nota final obtenida por el estudiante.
   Recibe 2 paramétros:
     - Una lista de Preguntas del test (que tienen el número de opciones y la respuesta válida).
     - Una lista de respuestas dadas por el estudiante.
   Devuelve:
     - La nota total obtenida por el estudiante. Para ello, en cada llamada
       recursiva coge la primera pregunta y la primera respuesta de ambas listas y
-      llama a notaPregunta para obtener la puntuación para esa pregunta. Luego,
+      llama a notaPregunta para obtener la puntuación para dicha pregunta. Luego,
       sumará esa puntuación junto con el resto de la lista, por lo que hará una
       llamada recursiva a la misma función pero con el resto de elementos de la lista.
 
-2. notaPregunta:
-  Recibe 2 paramétros:
-    - Una pregunta del test (con el número de respuesta correcta y numero de opciones)
-    - Una respuesta del estudiante (que será un valor
-      entero desde 0 a N - siendo N el número máximo de opciones).
-  Devuelve:
-    - La puntuación obtenida para esa pregunta. Puede ser:
-        * 1 si es correcta
-        * 0 si no la ha contestado
-        * -1/(N-1) si es incorrecta
+2. notaPregunta: recibe una pregunta y una respuesta del estudiante y devuelve
+   la nota obtenida por el estudiante en esa pregunta.
+   La puntuación obtenida puede tener los siguientes valores:
+    * 1 si es correcta
+    * 0 si no la ha contestado
+    * -1/(N-1) si es incorrecta
 
-3. NotaSobre10:
-  Transforma la nota obtenida en una nota sobre 10.
-  Para ello necesita el número de preguntas y la nota sacada para luego
-  aplicar una regla de 3.
+3. NotaSobre10: Transforma la nota obtenida en una nota sobre 10. Es una regla de 3.
 --}
 
 notaEstudiante :: [Pregunta] -> [Respuesta] -> Float
@@ -290,49 +282,19 @@ puntuacion10 numeroPreguntas notaObtenida
         | otherwise           = notaTotal
         where notaTotal = (10.0 * notaObtenida) / fromIntegral numeroPreguntas
 
-{--
-Ahora tenemos que hacer unas funciones que sean capaces de rellenas el campo
-de respuestasOrdenadas. ¿Por qué necesitamos este campo?
-
-Porque con la estructura de mi programa, es la manera más facil para luego
-poder obtener las estadísticas. La idea es coger las respuestas dadas para un modelo
-y ordenar dichas respuestas según las preguntas del test y NO el modelo
-(esto hace que luego podamos sacar estadísticas para cada pregunta, porque sabemos
-que todas las correcciones están ordenadas de la misma manera y no según el tipo de modelo)
-
-Dado un conjunto de respuestas ORDENADAS según nuestro test (y no según nuestro modelo de examen),
-devuelve una lista de enteros con la respuestas corregidas donde cada elemento puede tener estos valores:
-
--1 = Pregunta fallada
-0 = Pregunta no contestada
-1 = Pregunta acertada
-
-Parametros entrada:
-- Lista de preguntas (ordenadas según el test y NO según el modelo)
-- Lista de respuestas (ordenadas según el test y NO según el modelo)
-
-Devuelve:
-- Una lista con los elementos corregidos
---}
-
-rellenarTipoRespuesta :: [Pregunta] -> [Respuesta] -> [Int]
-rellenarTipoRespuesta [] _ = []
-rellenarTipoRespuesta _ [] = []
-rellenarTipoRespuesta (p: preguntas) (r: respuestas) =
-    (respuestaCorrecta p r) : (rellenarTipoRespuesta preguntas respuestas)
-
-respuestaCorrecta :: Pregunta -> Respuesta -> Int
-respuestaCorrecta (Pregunta respuestaCorrecta opciones) (Respuesta respuestaUsuario)
-    | respuestaUsuario == 0                   = 0 -- Respuesta no contestada
-    | respuestaCorrecta == respuestaUsuario   = 1 -- respuesta acertada
-    | otherwise                               = (-1) -- respuesta fallada
 
 {--
-También necesitamos una función que dado un conjunto de respuestas y un modelo,
-ordene dichas respuestas (que vendría en el orden que ha impuesto el modelo)
-y las ordena según el orden en el que hemos declarado nosotros las preguntas
-de nuestro test. Es decir, es una función conversora partiendo de respuestas
-en el orden del modelo y devolviendo respuestas en el orden de nuestro test.
+En esta fase del programa NO queremos tener las respuestas
+de un estudiante ordenadas según el modelo de examen, sino, queremos tener
+las respuestas ORDENADAS según las PREGUNTAS del test.
+
+Por tanto, TODOS los estudiantes, van a tener una lista de respuestas que
+corresponden con las mismas preguntas. Esto es genial, ya que luego nos faciilitará mucho
+la tarea para sacar estadísticas, ya que sabemos que en la posición 1 tenemos todos
+los resultados de los estudiantes a la pregunta 1 y así con el resto de preguntas.
+
+Por tanto, necesitamos implementar una función que ordene las respuestas
+para un modelo de examen y las convierta según las preguntas del test.
 --}
 
 generarRespuestasOrdenadas :: [Respuesta] -> Modelo -> [Respuesta]
@@ -357,13 +319,115 @@ maybeToInt :: Maybe Int -> Int
 maybeToInt a = digitToInt ((show a) !! 5)
 
 {--
-Funciones auxiliares para las estadísticas:
-1. tuacionMedia.
-    Calcula las puntaciones media de toda la lista de correcciones.
-    Para ello, primero llama a "sumarPuntuaciones", y luego divide
-    la suma total entre el número de respuestas al test (esto lo podemos
-    sacar cogiendo la longitud de correccion)
+Ahora tenemos que hacer unas funciones que sean capaces de rellenar el campo
+de respuestasOrdenadas. ¿Por qué necesitamos este campo?
 
+Porque con la estructura de mi programa, es la manera más facil para luego
+poder obtener las estadísticas.
+
+[IMPORTANTE] La lista de preguntas que recibe esta función esta ORDENADA
+según las preguntas del examen y NO según el modelo de examen.
+
+La idea de estas funciones es basicamente convertir cada respuesta de un
+usuario según si ha acertado, ha fallado o no la ha contestado.
+
+He optado por la siguiente representación (ya que nos facilitará mucho
+la tarea a posteriori)
+
+(-1) = Pregunta fallada
+   0 = Pregunta no contestada
+   1 = Pregunta acertada
+
+Devuelve:
+- Una lista con los elementos corregidos y ordenados
+--}
+
+rellenarTipoRespuesta :: [Pregunta] -> [Respuesta] -> [Int]
+rellenarTipoRespuesta [] _ = []
+rellenarTipoRespuesta _ [] = []
+rellenarTipoRespuesta (p: preguntas) (r: respuestas) =
+    (respuestaCorrecta p r) : (rellenarTipoRespuesta preguntas respuestas)
+
+respuestaCorrecta :: Pregunta -> Respuesta -> Int
+respuestaCorrecta (Pregunta respuestaCorrecta opciones) (Respuesta respuestaUsuario)
+    | respuestaUsuario == 0                   = 0 -- Respuesta no contestada
+    | respuestaCorrecta == respuestaUsuario   = 1 -- respuesta acertada
+    | otherwise                               = (-1) -- respuesta fallada
+
+{--
+Como última tipo de dato tenemos Estadísticas, tendrá varios campos
+para obtener datos sobre nuestra corrección y cada uno de los datos
+obtenidos se calcularán con varias funciones auxiliares creadas para
+tal proposito que podrás ver más abajo.
+--}
+
+data Estadisticas = Estadisticas {
+    puntuacionMedia :: Float,
+    numeroMedioPreguntasRespondidas :: Float,
+
+    numeroSuspensos :: Int, -- nota < 5
+    numeroAprobados :: Int, -- 5 <= nota < 7
+    numeroNotables  :: Int, -- 7 <= nota < 9
+    numeroSobresalientes :: Int, -- 9 <= nota
+
+    frecAbsRespuestasCorrectas :: [Float],
+    frecRelRespuestasCorrectas :: [Float],
+    frecAbsRespuestasErroneas :: [Float],
+    frecRelRespuestasErroneas :: [Float],
+    frecAbsRespuestasBlancos :: [Float],
+    frecRelRespuestasBlancos :: [Float],
+
+    preguntaMejorResultado :: Int,
+    preguntaPeorResultado :: Int,
+
+    preguntaMasBlanca :: Int,
+    preguntaMenosBlanca :: Int
+
+} deriving (Show)
+
+-- Devuelve las Estadísticas de nuestra corrección para un test dado
+-- y un conjunto de respuestas
+
+estadisticas :: Test -> [RespuestaTest] -> Estadisticas
+estadisticas test respuestas =
+    (Estadisticas
+        (calcularPuntuacionMedia correcciones)
+        (calcularNumeroMedioPreguntasRespondidas correcciones (cogerNumeroPreguntas test))
+
+        (calcularSuspensos correcciones)
+        (calcularAprobados correcciones)
+        (calcularNotables correcciones)
+        (calcularSobresalientes correcciones)
+
+        -- Primero calculamos las frecuencias absolutas-
+        -- La frecuencia relativa es el cociente entre la frecuencia absoluta
+        -- y el tamaño de la muestra (N) en nuestro caso la longitud de respuestas
+        frecuenciaAbsolutaCorrectas
+        (calcularFrecuenciaRelativa tamanoMuestra frecuenciaAbsolutaCorrectas)
+
+        frecuenciaAbsolutaErroneas
+        (calcularFrecuenciaRelativa tamanoMuestra frecuenciaAbsolutaCorrectas)
+
+        frecuenciaAbsolutaVacias
+        (calcularFrecuenciaRelativa tamanoMuestra frecuenciaAbsolutaCorrectas)
+
+        -- Mejores resultados y mas blancas
+        (conseguirPreguntaMejorResultado correcciones)
+        (conseguirPeorPeorResultado correcciones)
+
+        (conseguirPreguntaMasBlanca correcciones)
+        (conseguirPreguntaMenosBlanca correcciones)
+    )
+    where correcciones = (corrige_todos test respuestas)
+          tamanoMuestra = length(respuestas)
+          frecuenciaAbsolutaCorrectas = (calcularFrecuenciAbsolutaCorrectas correcciones)
+          frecuenciaAbsolutaErroneas = (calcularFrecuenciAbsolutaErroneas correcciones)
+          frecuenciaAbsolutaVacias = (calcularFrecuenciAbsolutaVacias correcciones)
+
+{--
+A continuación tenemos las funciones auxiliares que son llamadas
+desde estadísticas que son las que hacen toda la tarea de procesar
+los datos y sacar métricas.
 --}
 
 calcularPuntuacionMedia :: [Correccion] -> Float
@@ -405,16 +469,15 @@ calcularNotables x = length(filter (>=7) ((filter (<9)(map cogerNotaObtenida x))
 calcularSobresalientes :: [Correccion] -> Int
 calcularSobresalientes x = length(filter (>=9) (map cogerNotaObtenida x))
 
-
-
+--- CALCULAR FRECUNCIAS
+-----------------------
 
 calcularFrecuenciaRelativa :: Int -> [Float] -> [Float]
 calcularFrecuenciaRelativa tamanoMuestra frecuenciasAbsoluta =
     map (\x -> x / fromIntegral(tamanoMuestra)) frecuenciasAbsoluta
 
-
-
 -- Frecuencia Absoluta de respuestas vacias
+
 calcularFrecuenciAbsolutaVacias :: [Correccion] -> [Float]
 calcularFrecuenciAbsolutaVacias correcciones =
     foldl1 (zipWith (+)) (map dejarCorreccionVacias (map cogerTipoRespuesta correcciones))
@@ -428,8 +491,8 @@ quedarmeConVacias x
     | x == 1    = 0.0
     | otherwise = 0.0
 
-
 -- Frecuencia Absoluta de  respuestas correctas
+
 calcularFrecuenciAbsolutaCorrectas :: [Correccion] -> [Float]
 calcularFrecuenciAbsolutaCorrectas correcciones =
     foldl1 (zipWith (+)) (map dejarCorreccionCorrectas (map cogerTipoRespuesta correcciones))
@@ -444,6 +507,7 @@ quedarmeConCorrectas x
     | otherwise = 0.0
 
 -- Frecuencia Absoluta de  respuestas erroneas
+
 calcularFrecuenciAbsolutaErroneas :: [Correccion] -> [Float]
 calcularFrecuenciAbsolutaErroneas correcciones =
     foldl1 (zipWith (+)) (map dejarCorreccionErroneas (map cogerTipoRespuesta correcciones))
@@ -457,11 +521,8 @@ quedarmeConErroneas x
     | x == 1    = 0.0
     | otherwise = 1.0
 
-
-
-
-
-
+--- CALCULAR RESTO DE DATOS
+---------------------------
 
 conseguirPreguntaMejorResultado :: [Correccion] -> Int
 conseguirPreguntaMejorResultado correcciones =
@@ -494,10 +555,9 @@ sumarRespuestasEnBlanco :: [Correccion] -> [Int]
 sumarRespuestasEnBlanco correcciones =
     foldl1 (zipWith (+)) (map dejarRespuestasEnBlanco (map cogerTipoRespuesta correcciones))  -- Sumar lista de listas en una
 
--- Quitar aquellas respuestas que son -1, 1.
 -- Sabemos que las respuestas no contestadas son aquellas que tienen un 0.
--- Por tanto, lo que voy a hacer es para cada lista, quitar los aciertos y fallos
--- poniendolo a 0, y poner a 1 la pregunta que no ha sido contestada
+-- Por tanto tenemos que quitar aquellas respuestas que son erroneas (-1) o correctas (1).
+
 dejarRespuestasEnBlanco :: [Int] -> [Int]
 dejarRespuestasEnBlanco x = map quedarmeConBlanco x
 
@@ -507,80 +567,12 @@ quedarmeConBlanco x
     | x == 1    = 0
     | otherwise = 0
 
--- zipWith (\x y -> 2*x + y) [1..4] [5..8]
-
 {--
-Estadísticas
-pregunta mas veces (respectivamente menos veces) dejada en blanco.
---}
+GETTERS
 
-data Estadisticas = Estadisticas {
-    puntuacionMedia :: Float,
-    numeroMedioPreguntasRespondidas :: Float,
-
-    numeroSuspensos :: Int, -- nota < 5
-    numeroAprobados :: Int, -- 5 <= nota < 7
-    numeroNotables  :: Int, -- 7 <= nota < 9
-    numeroSobresalientes :: Int, -- 9 <= nota
-
-    frecAbsRespuestasCorrectas :: [Float],
-    frecRelRespuestasCorrectas :: [Float],
-    frecAbsRespuestasErroneas :: [Float],
-    frecRelRespuestasErroneas :: [Float],
-    frecAbsRespuestasBlancos :: [Float],
-    frecRelRespuestasBlancos :: [Float],
-
-    preguntaMejorResultado :: Int,
-    preguntaPeorResultado :: Int,
-
-    preguntaMasBlanca :: Int,
-    preguntaMenosBlanca :: Int
-
-} deriving (Show)
-
-estadisticas :: Test -> [RespuestaTest] -> Estadisticas
-estadisticas test respuestas =
-    (Estadisticas
-        (calcularPuntuacionMedia correcciones)
-        (calcularNumeroMedioPreguntasRespondidas correcciones (cogerNumeroPreguntas test))
-
-        (calcularSuspensos correcciones)
-        (calcularAprobados correcciones)
-        (calcularNotables correcciones)
-        (calcularSobresalientes correcciones)
-
-        -- Primero calculamos las frecuencias absolutas-
-        -- La frecuencia relativa es el cociente entre la frecuencia absoluta
-        -- y el tamaño de la muestra (N) en nuestro caso la longitud de respuestas
-        frecuenciaAbsolutaCorrectas
-        (calcularFrecuenciaRelativa tamanoMuestra frecuenciaAbsolutaCorrectas)
-
-        frecuenciaAbsolutaErroneas
-        (calcularFrecuenciaRelativa tamanoMuestra frecuenciaAbsolutaCorrectas)
-
-        frecuenciaAbsolutaVacias
-        (calcularFrecuenciaRelativa tamanoMuestra frecuenciaAbsolutaCorrectas)
-
-        -- Mejores resultados y mas blancas
-        (conseguirPreguntaMejorResultado correcciones)
-        (conseguirPeorPeorResultado correcciones)
-
-        (conseguirPreguntaMasBlanca correcciones)
-        (conseguirPreguntaMenosBlanca correcciones)
-    )
-    where correcciones = (corrige_todos test respuestas)
-          tamanoMuestra = length(respuestas)
-          frecuenciaAbsolutaCorrectas = (calcularFrecuenciAbsolutaCorrectas correcciones)
-          frecuenciaAbsolutaErroneas = (calcularFrecuenciAbsolutaErroneas correcciones)
-          frecuenciaAbsolutaVacias = (calcularFrecuenciAbsolutaVacias correcciones)
-
-
-{--
-Métodos para coger cada uno de los valores de la estadística
-y devolver una cadena.
-
-Este método es utilizado en la función que muestra en pantalla las
-estadísticas de un usuario.
+Por último, tenemos varias funciones para coger cada uno de los valores
+de la estadística y devolver una cadena. Estas funciones son usadas cunado
+queremos mostrar en pantalla el resultado de nuestro test.
 --}
 
 cogerNotaMedia :: Estadisticas -> String
