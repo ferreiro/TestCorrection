@@ -1,3 +1,6 @@
+import Data.List
+import Data.Char
+
 ---------------------------------------
 -- EJEMPLOS ---------------------------
 ---------------------------------------
@@ -16,10 +19,11 @@ modelos = [
 test = (Test preguntas modelos)
 
 respuestas = [
-      (RespuestaEstudiante "ABC-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])
-    , (RespuestaEstudiante "WWW-D" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)])
-    , (RespuestaEstudiante "DSC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
-    , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])]
+    (RespuestaEstudiante "George" 2 [(Respuesta 0), (Respuesta 1), (Respuesta 2), (Respuesta 3), (Respuesta 4)]) ]
+    --   (RespuestaEstudiante "ABC-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])
+    -- , (RespuestaEstudiante "WWW-D" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)])
+    -- , (RespuestaEstudiante "DSC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
+    -- , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])]
 
 _correcciones = (corrige_todos test respuestas)
 _estadisticas = estadisticas test respuestas
@@ -138,7 +142,7 @@ data Correccion = Correccion {
     identificadorAlumno :: String,
     puntuacionTotal :: Float,
     puntuacionSobre10 :: Float,
-    tipoRespuesta :: [Int] -- Para cada pregunta, 0= No respondida | 1 = Acertada | 2 = Fallada
+    tipoRespuesta :: [Respuesta] -- Para cada pregunta, 0= No respondida | 1 = Acertada | 2 = Fallada
 }  deriving (Show)
 
 corrige_todos :: Test -> [RespuestaEstudiante] -> [Correccion]
@@ -152,7 +156,7 @@ corrige (Test preguntas modelos) (RespuestaEstudiante identificador indiceModelo
             identificador
             (notaEstudiante (cogerPreguntasDelModelo preguntas (modelos !! (indiceModelo-1))) respuestas)
             (puntuacion10 (length preguntas) (notaEstudiante (cogerPreguntasDelModelo preguntas (modelos !! (indiceModelo-1))) respuestas))
-            []
+            (generarRespuestasOrdenadas respuestas (modelos !! (indiceModelo-1))) -- Convertimos un modelo desordenado en una lista ordenada
         )
 
 {--
@@ -184,13 +188,6 @@ cogerPreguntasDelModelo :: [Pregunta] -> Modelo -> [Pregunta]
 cogerPreguntasDelModelo preguntasDelTest modelo =
    cogerPreguntasDadoOrden preguntasDelTest (cogerOrdenPreguntas modelo)
 
--- cogerPreguntasDelModelo :: Test -> Modelo -> [Pregunta]
--- cogerPreguntasDelModelo (Test preguntas modelos) modelo =
---    cogerPreguntasDadoOrden preguntas (cogerOrdenPreguntas modelo)
-
-cogerOrdenPreguntas :: Modelo -> [Int]
-cogerOrdenPreguntas (Modelo ordenPreguntas) = ordenPreguntas
-
 -- va componiendo una lista de preguntas siguiente el orden dado
 cogerPreguntasDadoOrden :: [Pregunta] -> [Int] -> [Pregunta]
 cogerPreguntasDadoOrden [] _ = []
@@ -198,18 +195,25 @@ cogerPreguntasDadoOrden _ [] = []
 cogerPreguntasDadoOrden (preguntas) (indice:restoIndices) =
     (preguntas !! (indice - 1)) : (cogerPreguntasDadoOrden preguntas restoIndices)-- coger la pregunta
 
+cogerOrdenPreguntas :: Modelo -> [Int]
+cogerOrdenPreguntas (Modelo ordenPreguntas) = ordenPreguntas
+
 {--
 Ahora tenemos que hacer unas funciones que sean capaces de rellenas los campos
-de correctas, erroneas y vacias. ¿Por qué necesitamos estos 3 campos?
+de tipoRespuesta. ¿Por qué necesitamos este campo?
 
 Porque con la estructura de mi programa, es la manera más facil para luego
 poder obtener las estadísticas. La idea de las siguientes funciones es la siguiente:
 
-Pasas un test y un modelo de examen. Entonces estos atributos van a ser listas,
-que a 1 indican si la pregunta fue (acertada, fallada o vacia). La peculiaridad
-de estas listas es que el orden en el que van a ser devueltas NO es el orden del
-modelo de examen, sino, el orden en el que nosotros tenemos guardadas las preguntas.
-Esto es así para que luego a la hora de hacer las estadísticas sean muy cómodas.
+Pasas un test y un modelo de examen. Entonces tipoRespuesta será una lista de
+enteros, cuyos valores indican:
+  0 = Pregunta no contestada
+  1 = Pregunta acertada
+  2 = Pregunta Fallada.
+
+La peculiarida de esta lista es que el orden en el que van a ser devueltas los
+elementos NO es el orden del modelo de examen, sino, el orden en el que nosotros
+tenemos guardadas las preguntas. Esto es así para que luego a la hora de hacer las estadísticas sean muy cómodas.
 
 Notese que en la función anteriormente descrita "cogerPreguntasDelModelo",
 devolvíamos una lista de preguntas ordenadas según el modelo. Esto es así, a drede,
@@ -218,6 +222,72 @@ en estas próximas funciones eso NO lo queremos. Lo que queremos es devolverlo
 en el orden en el que tenemos nuestras preguntas (por lo que te he dicho que
 luego a la hora de hacer las estadísticas será mucho más cómodo).
 --}
+
+{--
+Te dan una lista de respuestas del usuario y una lista ordenada [1, 2, 3].
+Vamos consumiendo cada elemento de la lista ordenada y con ese, accedemos
+--}
+
+generarRespuestasOrdenadas :: [Respuesta] -> Modelo -> [Respuesta]
+generarRespuestasOrdenadas respuestas (Modelo ordenRespuestasEnModelo) =
+    ordenarRespuestas
+        [1, 2..length(respuestas)] -- Así es como queremos ordenar nuestras respuestas
+        ordenRespuestasEnModelo -- El modelo puede tener [3, 2, 1] (JUsto al reves... entonces queremos darle la vuelta)
+        respuestas
+
+ordenarRespuestas :: [Int] -> [Int] -> [Respuesta] -> [Respuesta]
+ordenarRespuestas [] _ _ = []
+ordenarRespuestas _ [] _ = []
+ordenarRespuestas _ _ [] = []
+ordenarRespuestas (x:xs) ordenRespuestasModelo respuestas =
+   (respuestas !! (indiceRespuestaEnModelo x ordenRespuestasModelo)) : ordenarRespuestas xs ordenRespuestasModelo respuestas
+
+-- Encuentra en dónde está la respuesta según el orden que tiene el modelo
+indiceRespuestaEnModelo :: Int -> [Int] -> Int
+indiceRespuestaEnModelo x ordenModelo = maybeToInt(findIndex (==x) ordenModelo)
+
+maybeToInt :: Maybe Int -> Int
+maybeToInt a = digitToInt ((show a) !! 5)
+
+
+-- ordenarRespuestas :: [Respuesta] -> Modelo -> [Int]
+-- ordenarRespuestas respuestas (Modelo respuestasDesordenadas) =
+--     respuestasEnOrden respuestas [1..length(respuestas)] ordenModelo
+--
+-- respuestasEnOrden :: [Respuesta] -> [Int] -> [Int]-> [Int]
+-- respuestasEnOrden [] _ _ = []
+-- respuestasEnOrden (respuestas) (x:ordenRespuestas) ordenModelo =
+--     (cogerValorRespuesta (respuestas !! maybeToInt(findIndex (==x) ordenModelo))) : (respuestasEnOrden respuestas ordenRespuestas ordenModelo)
+--
+-- cogerValorRespuesta :: Respuesta -> Int
+-- cogerValorRespuesta (Respuesta valor) = valor
+--
+-- maybeToInt :: Maybe Int -> Int
+-- maybeToInt a = digitToInt ((show a) !! 5)
+
+
+
+
+
+-- numeroTotalPreguntasRespondidas :: [Correccion] -> Int
+-- numeroTotalPreguntasRespondidas [] = 0
+-- numeroTotalPreguntasRespondidas (x:correcciones) =
+--   respuestasRespondidasEstudiante x + numeroTotalPreguntasRespondidas correcciones
+--
+-- respuestasRespondidasEstudiante :: Correccion -> Int
+-- respuestasRespondidasEstudiante (Correccion _ _ _ tipoRespuesta) =
+--   length(filter (>0) tipoRespuesta) -- Cogemos respuestas del tipo 1 o 2 (es decir, o correctas o falsas) excepto aquellas no contestadas
+
+
+-- -- Le pasas las preguntas tal cual las tenemos almacenadas en nuestro test y cogemos la respuesta para nuestro modelo
+-- convertirRespuestas :: [Pregunta] -> [Respuesta] -> [Int]
+--
+-- respuestaCorrecta :: Pregunta -> Respuesta -> Bool
+-- respuestaCorrecta (Pregunta respuestaCorrecta opciones) (Respuesta respuestaUsuario)
+--     | respuestaCorrecta == respuestaUsuario   = True
+--     | otherwise                               = False
+
+
 
 {--
 Para calcular la nota de un estudiante vamos a necesitar dos funciones:
