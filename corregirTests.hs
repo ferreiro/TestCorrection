@@ -21,10 +21,48 @@ respuestas = [
     , (RespuestaEstudiante "DSC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
     , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])]
 
-correccion = (corrige_todos test respuestas)
-correccion_individual = (corrige test (respuestas !! 1))
+_correcciones = (corrige_todos test respuestas)
+_estadisticas = estadisticas test respuestas
 
-estadisticas_totales = estadisticas test respuestas
+mostrar = mostrarResultadosEstadisticas _estadisticas
+
+------------------------------------------------------------------
+-- PARTE OPCIONAL: INTERACCIÓN CON EL USUARIO --------------------
+------------------------------------------------------------------
+
+-- Mostrar las estadisticas de un usuario en la pantalla
+
+mostrarResultadosEstadisticas :: Estadisticas -> IO()
+mostrarResultadosEstadisticas estadistica = do
+    putStrLn("\n")
+    putStrLn("\tBienvenido al corrector de notas inteligente.")
+    putStrLn("\tEstos son los resultados de nuestra corrección automática.")
+
+    putStrLn("\n\tBreve resumen:")
+    putStrLn("\tLa nota media ha sido de " ++ (cogerNotaMedia estadistica))
+    putStrLn("\tEl Numero Medio de Preguntas Respondidas es de " ++ (cogerMediaRespuestas estadistica))
+
+    putStrLn("\n\t¿Cómo han ido tus alumnos?:")
+    putStrLn("\t" ++ (cogerSuspensos estadistica) ++ " alumnos han sacado notable.")
+    putStrLn("\t" ++ (cogerAprobados estadistica) ++ " alumnos han aprobado.")
+    putStrLn("\t" ++ (cogerNotables estadistica) ++ " alumnos han sacado notable.")
+    putStrLn("\t" ++ (cogerSobresalientes estadistica) ++ " alumnos lo han bordado con un sobresaliente!.")
+
+    putStrLn("\n\tPreguntas:")
+    putStrLn("\tPregunta con mejor resultado: " ++ (cogerPreguntaMejorResultado estadistica))
+    putStrLn("\tPregunta con peor resultado: " ++ (cogerPreguntaPeorResultado estadistica))
+    putStrLn("\tPregunta mas contestada: " ++ (cogerPreguntaMasContestada estadistica))
+    putStrLn("\tPregunta menos contestada: " ++ (cogerPreguntaMenosContestada estadistica))
+
+    -- putStrLn("\n\tAhora vamos :")
+    -- putStrLn("\tFrecAbsRespuestasCorrectas: " ++ (cogerFrecAbsRespuestasCorrectas estadistica))
+    -- putStrLn("\tFrecRelRespuestasCorrectas: " ++ (cogerFrecRelRespuestasCorrectas estadistica))
+    -- putStrLn("\tFrecAbsRespuestasErroneas: " ++ (cogerFrecAbsRespuestasErroneas estadistica))
+    -- putStrLn("\tFrecRelRespuestasErroneas: " ++ (cogerFrecRelRespuestasErroneas estadistica))
+    -- putStrLn("\tFrecAbsRespuestasBlancos: " ++ (cogerFrecAbsRespuestasBlancos estadistica))
+    -- putStrLn("\tFrecRelRespuestasBlancos: " ++ (cogerFrecRelRespuestasBlancos estadistica))
+
+    putStrLn("\n\n\tTienes que subscribirte a la versión de pago para ver el resto de estadísticas :).\n\t[Comprar versión de pago...]")
 
 ---------------------------------------
 -- DATA STRUCTURES --------------------
@@ -99,18 +137,14 @@ Tanto: identificador del alumno, puntuaciónTotal y puntuación sobre 10.
 data Correccion = Correccion {
     identificadorAlumno :: String,
     puntuacionTotal :: Float,
-    puntuacionSobre10 :: Float
-
-    -- correctas :: [Int],
-    -- erroneas :: [Int],
-    -- blancas :: [Int]
-
+    puntuacionSobre10 :: Float,
+    tipoRespuesta :: [Int] -- Para cada pregunta, 0= No respondida | 1 = Acertada | 2 = Fallada
 }  deriving (Show)
 
 corrige_todos :: Test -> [RespuestaEstudiante] -> [Correccion]
 corrige_todos _ [] = []
 corrige_todos test (x: xs) =
-    corrige test x : corrige_todos test xs
+        corrige test x : corrige_todos test xs
 
 corrige :: Test -> RespuestaEstudiante -> Correccion
 corrige (Test preguntas modelos) (RespuestaEstudiante identificador indiceModelo respuestas) =
@@ -119,6 +153,70 @@ corrige (Test preguntas modelos) (RespuestaEstudiante identificador indiceModelo
             (notaEstudiante (cogerPreguntasDelModelo preguntas (modelos !! (indiceModelo-1))) respuestas)
             (puntuacion10 (length preguntas) (notaEstudiante (cogerPreguntasDelModelo preguntas (modelos !! (indiceModelo-1))) respuestas))
         )
+
+{--
+Como hemos podido observar en la función anterior, necesitamos uan lista de preguntas
+para poder comprobar si la lista de respuestas del usuario es correcta.
+
+Por tanto, necesitamos obtener una lista de Preguntas para un modelo dado.
+Como el modelo es una lista de enteros que representan las permutaciones
+de preguntas, entonces tenemos que encontrar de devolver una lista de preguntas
+del testo pero con el orden que tiene el modelo.
+
+Para esto, necesitamos 3 funciones:
+  1. cogerPreguntasDelModelo
+     Recibe un test, un modelo de dicho test y devuelve una lista de preguntas.
+     Para ello llama a cogerPreguntasDadoOrden y le pasa la lista de preguntas
+     que tiene el test y el orden de preguntas del modelo de test.
+
+  2. cogerOrdenPreguntas.
+      Devuelve una lista de enteros, cuyos elementos representan el la pregunta
+      a la que se refiere nuestro modelo.
+
+  3. cogerPreguntasDadoOrden.
+      Recibe una lista de preguntas y el orden de las preguntas del modelo.
+      Por tanto, lo que devuelve es una lista de preguntas (que sigue el orden de nuestro modelo)
+
+--}
+
+cogerPreguntasDelModelo :: [Pregunta] -> Modelo -> [Pregunta]
+cogerPreguntasDelModelo preguntasDelTest modelo =
+   cogerPreguntasDadoOrden preguntasDelTest (cogerOrdenPreguntas modelo)
+
+-- cogerPreguntasDelModelo :: Test -> Modelo -> [Pregunta]
+-- cogerPreguntasDelModelo (Test preguntas modelos) modelo =
+--    cogerPreguntasDadoOrden preguntas (cogerOrdenPreguntas modelo)
+
+cogerOrdenPreguntas :: Modelo -> [Int]
+cogerOrdenPreguntas (Modelo ordenPreguntas) = ordenPreguntas
+
+-- va componiendo una lista de preguntas siguiente el orden dado
+cogerPreguntasDadoOrden :: [Pregunta] -> [Int] -> [Pregunta]
+cogerPreguntasDadoOrden [] _ = []
+cogerPreguntasDadoOrden _ [] = []
+cogerPreguntasDadoOrden (preguntas) (indice:restoIndices) =
+    (preguntas !! (indice - 1)) : (cogerPreguntasDadoOrden preguntas restoIndices)-- coger la pregunta
+
+{--
+Ahora tenemos que hacer unas funciones que sean capaces de rellenas los campos
+de correctas, erroneas y vacias. ¿Por qué necesitamos estos 3 campos?
+
+Porque con la estructura de mi programa, es la manera más facil para luego
+poder obtener las estadísticas. La idea de las siguientes funciones es la siguiente:
+
+Pasas un test y un modelo de examen. Entonces estos atributos van a ser listas,
+que a 1 indican si la pregunta fue (acertada, fallada o vacia). La peculiaridad
+de estas listas es que el orden en el que van a ser devueltas NO es el orden del
+modelo de examen, sino, el orden en el que nosotros tenemos guardadas las preguntas.
+Esto es así para que luego a la hora de hacer las estadísticas sean muy cómodas.
+
+Notese que en la función anteriormente descrita "cogerPreguntasDelModelo",
+devolvíamos una lista de preguntas ordenadas según el modelo. Esto es así, a drede,
+ya que queríamos poder comparar dichas preguntas con las del usuario. En cambio,
+en estas próximas funciones eso NO lo queremos. Lo que queremos es devolverlo
+en el orden en el que tenemos nuestras preguntas (por lo que te he dicho que
+luego a la hora de hacer las estadísticas será mucho más cómodo).
+--}
 
 {--
 Para calcular la nota de un estudiante vamos a necesitar dos funciones:
@@ -156,7 +254,7 @@ notaEstudiante :: [Pregunta] -> [Respuesta] -> Float
 notaEstudiante [] _ = 0.0
 notaEstudiante _ [] = 0.0
 notaEstudiante (pregunta:preguntas) (respuesta:respuestas) =
-    (notaPregunta pregunta respuesta) + (notaEstudiante preguntas respuestas)
+        (notaPregunta pregunta respuesta) + (notaEstudiante preguntas respuestas)
 
 notaPregunta :: Pregunta -> Respuesta -> Float
 notaPregunta (Pregunta respuestaCorrecta opciones) (Respuesta respuestaEstudiante)
@@ -172,7 +270,6 @@ puntuacion10 numeroPreguntas notaObtenida
         | notaTotal <= 0      = 0
         | otherwise           = notaTotal
         where notaTotal = (10.0 * notaObtenida) / fromIntegral numeroPreguntas
-
 
 {--
 Getters - Métodos para coger atributos de corrección.
@@ -253,51 +350,6 @@ calcularSobresalientes (x:xs)
     | otherwise               = 0 + (calcularSobresalientes xs)
     where sobresaliente = estaSobresaliente x
 
-
-
-{--
-Como hemos podido observar en la función anterior, necesitamos uan lista de preguntas
-para poder comprobar si la lista de respuestas del usuario es correcta.
-
-Por tanto, necesitamos obtener una lista de Preguntas para un modelo dado.
-Como el modelo es una lista de enteros que representan las permutaciones
-de preguntas, entonces tenemos que encontrar de devolver una lista de preguntas
-del testo pero con el orden que tiene el modelo.
-
-Para esto, necesitamos 3 funciones:
-  1. cogerPreguntasDelModelo
-     Recibe un test, un modelo de dicho test y devuelve una lista de preguntas.
-     Para ello llama a cogerPreguntasDadoOrden y le pasa la lista de preguntas
-     que tiene el test y el orden de preguntas del modelo de test.
-
-  2. cogerOrdenPreguntas.
-      Devuelve una lista de enteros, cuyos elementos representan el la pregunta
-      a la que se refiere nuestro modelo.
-
-  3. cogerPreguntasDadoOrden.
-      Recibe una lista de preguntas y el orden de las preguntas del modelo.
-      Por tanto, lo que devuelve es una lista de preguntas (que sigue el orden de nuestro modelo)
-
---}
-
-cogerPreguntasDelModelo :: [Pregunta] -> Modelo -> [Pregunta]
-cogerPreguntasDelModelo preguntasDelTest modelo =
-   cogerPreguntasDadoOrden preguntasDelTest (cogerOrdenPreguntas modelo)
-
--- cogerPreguntasDelModelo :: Test -> Modelo -> [Pregunta]
--- cogerPreguntasDelModelo (Test preguntas modelos) modelo =
---    cogerPreguntasDadoOrden preguntas (cogerOrdenPreguntas modelo)
-
-cogerOrdenPreguntas :: Modelo -> [Int]
-cogerOrdenPreguntas (Modelo ordenPreguntas) = ordenPreguntas
-
--- va componiendo una lista de preguntas siguiente el orden dado
-cogerPreguntasDadoOrden :: [Pregunta] -> [Int] -> [Pregunta]
-cogerPreguntasDadoOrden [] _ = []
-cogerPreguntasDadoOrden _ [] = []
-cogerPreguntasDadoOrden (preguntas) (indice:restoIndices) =
-    (preguntas !! (indice - 1)) : (cogerPreguntasDadoOrden preguntas restoIndices)-- coger la pregunta
-
 {--
 Estadísticas
 pregunta mas veces (respectivamente menos veces) dejada en blanco.
@@ -305,19 +357,19 @@ pregunta mas veces (respectivamente menos veces) dejada en blanco.
 
 data Estadisticas = Estadisticas {
     puntuacionMedia :: Float,
-    numeroMedioPreguntasRespondidas :: Float,
+    numeroMedioPreguntasRespondidas :: Int,
 
     numeroSuspensos :: Int, -- nota < 5
     numeroAprobados :: Int, -- 5 <= nota < 7
     numeroNotables  :: Int, -- 7 <= nota < 9
     numeroSobresalientes :: Int, -- 9 <= nota
 
-    frecAbsRespuestasCorrectas :: Float,
-    frecRelRespuestasCorrectas :: Float,
-    frecAbsRespuestasErroneas :: Float,
-    frecRelRespuestasErroneas :: Float,
-    frecAbsRespuestasBlancos :: Float,
-    frecRelRespuestasBlancos :: Float,
+    frecAbsRespuestasCorrectas :: [Float],
+    frecRelRespuestasCorrectas :: [Float],
+    frecAbsRespuestasErroneas :: [Float],
+    frecRelRespuestasErroneas :: [Float],
+    frecAbsRespuestasBlancos :: [Float],
+    frecRelRespuestasBlancos :: [Float],
 
     preguntaMejorResultado :: Int,
     preguntaPeorResultado :: Int,
@@ -331,24 +383,81 @@ estadisticas :: Test -> [RespuestaEstudiante] -> Estadisticas
 estadisticas test respuestas =
     (Estadisticas
         (calcularPuntuacionMedia correcciones)
-        10.0
+        0
 
         (calcularSuspensos correcciones)
         (calcularAprobados correcciones)
         (calcularNotables correcciones)
         (calcularSobresalientes correcciones)
 
-        0.0
-        0.0
-        0.0
-        0.0
-        0.0
-        0.0
+        [0.0, 0.0, 0.0, 0.0]
+        [0.0, 0.0, 0.0, 0.0]
+        [0.0, 0.0, 0.0, 0.0]
+        [0.0, 0.0, 0.0, 0.0]
+        [0.0, 0.0, 0.0, 0.0]
+        [0.0, 0.0, 0.0, 0.0]
 
-        3
-        1
+        0
+        0
 
-        3
-        1
+        0
+        0
     )
     where correcciones = (corrige_todos test respuestas)
+
+
+{--
+Métodos para coger cada uno de los valores de la estadística
+y devolver una cadena.
+
+Este método es utilizado en la función que muestra en pantalla las
+estadísticas de un usuario.
+--}
+
+cogerNotaMedia :: Estadisticas -> String
+cogerNotaMedia (Estadisticas nota _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) = show nota
+
+cogerMediaRespuestas :: Estadisticas -> String
+cogerMediaRespuestas (Estadisticas _ respuestas _ _ _ _ _ _ _ _ _ _ _ _ _ _) = show respuestas
+
+cogerSuspensos :: Estadisticas -> String
+cogerSuspensos (Estadisticas _ _ suspensos _ _ _ _ _ _ _ _ _ _ _ _ _) = show suspensos
+
+cogerAprobados :: Estadisticas -> String
+cogerAprobados (Estadisticas _ _ _ aprobados _ _ _ _ _ _ _ _ _ _ _ _) = show aprobados
+
+cogerNotables :: Estadisticas -> String
+cogerNotables (Estadisticas _ _ _ _ notables _ _ _ _ _ _ _ _ _ _ _) = show notables
+
+cogerSobresalientes :: Estadisticas -> String
+cogerSobresalientes (Estadisticas _ _ _ _ _ sobresalientes _ _ _ _ _ _ _ _ _ _) = show sobresalientes
+
+cogerFrecAbsRespuestasCorrectas :: Estadisticas -> String
+cogerFrecAbsRespuestasCorrectas (Estadisticas _ _ _ _ _ _ frec _ _ _ _ _ _ _ _ _) = show frec
+
+cogerFrecRelRespuestasCorrectas :: Estadisticas -> String
+cogerFrecRelRespuestasCorrectas (Estadisticas _ _ _ _ _ _ _ frec _ _ _ _ _ _ _ _) = show frec
+
+cogerFrecAbsRespuestasErroneas :: Estadisticas -> String
+cogerFrecAbsRespuestasErroneas (Estadisticas _ _ _ _ _ _ _ _ frec _ _ _ _ _ _ _) = show frec
+
+cogerFrecRelRespuestasErroneas :: Estadisticas -> String
+cogerFrecRelRespuestasErroneas (Estadisticas _ _ _ _ _ _ _ _ _ frec _ _ _ _ _ _) = show frec
+
+cogerFrecAbsRespuestasBlancos :: Estadisticas -> String
+cogerFrecAbsRespuestasBlancos (Estadisticas _ _ _ _ _ _ _ _ _ _ frec _ _ _ _ _) = show frec
+
+cogerFrecRelRespuestasBlancos :: Estadisticas -> String
+cogerFrecRelRespuestasBlancos (Estadisticas _ _ _ _ _ _ _ _ _ _ _ frec _ _ _ _) = show frec
+
+cogerPreguntaMejorResultado :: Estadisticas -> String
+cogerPreguntaMejorResultado (Estadisticas _ _ _ _ _ _ _ _ _ _ _ _ pregunta _ _ _) = show pregunta
+
+cogerPreguntaPeorResultado :: Estadisticas -> String
+cogerPreguntaPeorResultado (Estadisticas _ _ _ _ _ _ _ _ _ _ _ _ _ pregunta _ _) = show pregunta
+
+cogerPreguntaMasContestada :: Estadisticas -> String
+cogerPreguntaMasContestada (Estadisticas _ _ _ _ _ _ _ _ _ _ _ _ _ _ pregunta _) = show pregunta
+
+cogerPreguntaMenosContestada :: Estadisticas -> String
+cogerPreguntaMenosContestada (Estadisticas _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ pregunta) = show pregunta
