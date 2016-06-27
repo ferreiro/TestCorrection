@@ -19,7 +19,7 @@ modelos = [
 test = (Test preguntas modelos)
 
 respuestas = [
-    (RespuestaEstudiante "George" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 2), (Respuesta 3), (Respuesta 4)]) ]
+    (RespuestaEstudiante "George" 2 [(Respuesta 1), (Respuesta 1), (Respuesta 33), (Respuesta 0), (Respuesta 0)]) ]
     --   (RespuestaEstudiante "ABC-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])
     -- , (RespuestaEstudiante "WWW-D" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)])
     -- , (RespuestaEstudiante "DSC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
@@ -44,7 +44,7 @@ mostrarResultadosEstadisticas estadistica = do
 
     putStrLn("\n\tBreve resumen:")
     putStrLn("\tLa nota media ha sido de " ++ (cogerNotaMedia estadistica))
-    putStrLn("\tEl Numero Medio de Preguntas Respondidas es de " ++ (cogerMediaRespuestas estadistica))
+    putStrLn("\tEl " ++ (cogerMediaRespuestas estadistica) ++ "% de las preguntas han sido contestadas")
 
     putStrLn("\n\t¿Cómo han ido tus alumnos?:")
     putStrLn("\t" ++ (cogerSuspensos estadistica) ++ " alumnos han sacado notable.")
@@ -101,6 +101,9 @@ data Modelo = Modelo {
     ordenPreguntas :: [Int] -- Orden de las preguntas del test (permutaciones) | Cada elemento indica el indice de la pregunta en "preguntas" de Test
 } deriving (Show)
 
+cogerNumeroPreguntas :: Test -> Int
+cogerNumeroPreguntas (Test preguntas modelos) = length(preguntas)
+
 {--
 Ahora vamos a definir un tipo de datos para las respuestas.
 Cada respuesta tiene un identificador del estudiante (En mi caso, voy a utilizar
@@ -142,7 +145,7 @@ data Correccion = Correccion {
     identificadorAlumno :: String,
     puntuacionTotal :: Float,
     puntuacionSobre10 :: Float,
-    tipoRespuesta :: [Respuesta] -- Para cada pregunta, 0= No respondida | 1 = Acertada | 2 = Fallada
+    tipoRespuesta :: [Int] -- Para cada pregunta, 0= No respondida | 1 = Acertada | 2 = Fallada
 }  deriving (Show)
 
 corrige_todos :: Test -> [RespuestaEstudiante] -> [Correccion]
@@ -156,8 +159,13 @@ corrige (Test preguntas modelos) (RespuestaEstudiante identificador indiceModelo
             identificador
             (notaEstudiante (cogerPreguntasDelModelo preguntas (modelos !! (indiceModelo-1))) respuestas)
             (puntuacion10 (length preguntas) (notaEstudiante (cogerPreguntasDelModelo preguntas (modelos !! (indiceModelo-1))) respuestas))
-            (generarRespuestasOrdenadas respuestas (modelos !! (indiceModelo-1))) -- Convertimos un modelo desordenado en una lista ordenada
+            (rellenarTipoRespuesta preguntas (generarRespuestasOrdenadas respuestas (modelos !! (indiceModelo-1)))) -- Convertimos un modelo desordenado en una lista ordenada
         )
+
+cogerTipoRespuesta :: Correccion -> [Int]
+cogerTipoRespuesta (Correccion _ _ _ tipoRespuesta) =  tipoRespuesta
+
+
 
 {--
 Como hemos podido observar en la función anterior, necesitamos uan lista de preguntas
@@ -198,35 +206,43 @@ cogerPreguntasDadoOrden (preguntas) (indice:restoIndices) =
 cogerOrdenPreguntas :: Modelo -> [Int]
 cogerOrdenPreguntas (Modelo ordenPreguntas) = ordenPreguntas
 
+
 {--
-Ahora tenemos que hacer unas funciones que sean capaces de rellenas los campos
+Ahora tenemos que hacer unas funciones que sean capaces de rellenas el campo
 de tipoRespuesta. ¿Por qué necesitamos este campo?
 
 Porque con la estructura de mi programa, es la manera más facil para luego
-poder obtener las estadísticas. La idea de las siguientes funciones es la siguiente:
+poder obtener las estadísticas. La idea es coger las respuestas dadas para un modelo
+y ordenar dichas respuestas según las preguntas del test y NO el modelo
+(esto hace que luego podamos sacar estadísticas para cada pregunta, porque sabemos
+que todas las correcciones están ordenadas de la misma manera y no según el tipo de modelo)
 
-Pasas un test y un modelo de examen. Entonces tipoRespuesta será una lista de
-enteros, cuyos valores indican:
-  0 = Pregunta no contestada
-  1 = Pregunta acertada
-  2 = Pregunta Fallada.
+Dado un conjunto de respuestas ORDENADAS según nuestro test (y no según nuestro modelo de examen),
+devuelve una lista de enteros con la respuestas corregidas donde cada elemento puede tener estos valores:
 
-La peculiarida de esta lista es que el orden en el que van a ser devueltas los
-elementos NO es el orden del modelo de examen, sino, el orden en el que nosotros
-tenemos guardadas las preguntas. Esto es así para que luego a la hora de hacer las estadísticas sean muy cómodas.
+0 = Pregunta no contestada
+1 = Pregunta acertada
+2 = Pregunta fallada
 
-Notese que en la función anteriormente descrita "cogerPreguntasDelModelo",
-devolvíamos una lista de preguntas ordenadas según el modelo. Esto es así, a drede,
-ya que queríamos poder comparar dichas preguntas con las del usuario. En cambio,
-en estas próximas funciones eso NO lo queremos. Lo que queremos es devolverlo
-en el orden en el que tenemos nuestras preguntas (por lo que te he dicho que
-luego a la hora de hacer las estadísticas será mucho más cómodo).
+Parametros entrada:
+- Lista de preguntas (ordenadas según el test y NO según el modelo)
+- Lista de respuestas (ordenadas según el test y NO según el modelo)
+
+Devuelve:
+- Una lista con los elementos corregidos
 --}
 
-{--
-Te dan una lista de respuestas del usuario y una lista ordenada [1, 2, 3].
-Vamos consumiendo cada elemento de la lista ordenada y con ese, accedemos
---}
+rellenarTipoRespuesta :: [Pregunta] -> [Respuesta] -> [Int]
+rellenarTipoRespuesta [] _ = []
+rellenarTipoRespuesta _ [] = []
+rellenarTipoRespuesta (p: preguntas) (r: respuestas) =
+    (respuestaCorrecta p r) : (rellenarTipoRespuesta preguntas respuestas)
+
+respuestaCorrecta :: Pregunta -> Respuesta -> Int
+respuestaCorrecta (Pregunta respuestaCorrecta opciones) (Respuesta respuestaUsuario)
+    | respuestaUsuario == 0                   = 0 -- Respuesta no contestada
+    | respuestaCorrecta == respuestaUsuario   = 1 -- respuesta acertada
+    | otherwise                               = 2 -- respuesta fallada
 
 {--
 La misión de esta función es dado un conjunto de respuestas y un modelo,
@@ -258,20 +274,6 @@ maybeToInt :: Maybe Int -> Int
 maybeToInt a = digitToInt ((show a) !! 5)
 
 
--- ordenarRespuestas :: [Respuesta] -> Modelo -> [Int]
--- ordenarRespuestas respuestas (Modelo respuestasDesordenadas) =
---     respuestasEnOrden respuestas [1..length(respuestas)] ordenModelo
---
--- respuestasEnOrden :: [Respuesta] -> [Int] -> [Int]-> [Int]
--- respuestasEnOrden [] _ _ = []
--- respuestasEnOrden (respuestas) (x:ordenRespuestas) ordenModelo =
---     (cogerValorRespuesta (respuestas !! maybeToInt(findIndex (==x) ordenModelo))) : (respuestasEnOrden respuestas ordenRespuestas ordenModelo)
---
--- cogerValorRespuesta :: Respuesta -> Int
--- cogerValorRespuesta (Respuesta valor) = valor
---
--- maybeToInt :: Maybe Int -> Int
--- maybeToInt a = digitToInt ((show a) !! 5)
 
 
 
@@ -290,10 +292,7 @@ maybeToInt a = digitToInt ((show a) !! 5)
 -- -- Le pasas las preguntas tal cual las tenemos almacenadas en nuestro test y cogemos la respuesta para nuestro modelo
 -- convertirRespuestas :: [Pregunta] -> [Respuesta] -> [Int]
 --
--- respuestaCorrecta :: Pregunta -> Respuesta -> Bool
--- respuestaCorrecta (Pregunta respuestaCorrecta opciones) (Respuesta respuestaUsuario)
---     | respuestaCorrecta == respuestaUsuario   = True
---     | otherwise                               = False
+
 
 
 
@@ -383,7 +382,7 @@ estaSobresaliente correccion
 
 {--
 Funciones auxiliares para las estadísticas:
-1. calcularPuntuacionMedia.
+1. tuacionMedia.
     Calcula las puntaciones media de toda la lista de correcciones.
     Para ello, primero llama a "sumarPuntuaciones", y luego divide
     la suma total entre el número de respuestas al test (esto lo podemos
@@ -394,12 +393,28 @@ Funciones auxiliares para las estadísticas:
 calcularPuntuacionMedia :: [Correccion] -> Float
 calcularPuntuacionMedia correccion =
     (sumarPuntuaciones correccion) / fromIntegral( length(correccion) )
-
 -- Función auxiliar para calcularPuntuacionMedia
 sumarPuntuaciones :: [Correccion] -> Float
 sumarPuntuaciones [] = 0.0
 sumarPuntuaciones (x:xs) =
     (cogerPuntuacionSobre10 x) + sumarPuntuaciones xs
+
+-- Calcula el numero medio de preguntas respondidas
+-- Por tanto, sería calcular el número de respuestas en blanco para
+-- cada persona y luego restarlo al número de preguntas en total.
+
+calcularNumeroMedioPreguntasRespondidas :: [Correccion] -> Int -> Float
+calcularNumeroMedioPreguntasRespondidas correcciones numeroPreguntas =
+   -- Regla de tress. Formula: (preguntasRespondidas*100) / preguntas totales
+   (fromIntegral (sumarPreguntasRespondidas correcciones) * 100) / fromIntegral (numeroPreguntas * length(correcciones))
+
+sumarPreguntasRespondidas :: [Correccion] -> Int
+sumarPreguntasRespondidas [] = 0
+sumarPreguntasRespondidas (x:xs) =
+   (calcularRespuestasContestadas (cogerTipoRespuesta x)) + (sumarPreguntasRespondidas xs)
+
+calcularRespuestasContestadas :: [Int] -> Int
+calcularRespuestasContestadas respuestas = length(filter (>0) respuestas) -- coge aquellas preguntas que sí han sido contestada (1==correcta|2==fallo)
 
 calcularSuspensos :: [Correccion] -> Int
 calcularSuspensos [] = 0
@@ -436,7 +451,7 @@ pregunta mas veces (respectivamente menos veces) dejada en blanco.
 
 data Estadisticas = Estadisticas {
     puntuacionMedia :: Float,
-    numeroMedioPreguntasRespondidas :: Int,
+    numeroMedioPreguntasRespondidas :: Float,
 
     numeroSuspensos :: Int, -- nota < 5
     numeroAprobados :: Int, -- 5 <= nota < 7
@@ -462,7 +477,7 @@ estadisticas :: Test -> [RespuestaEstudiante] -> Estadisticas
 estadisticas test respuestas =
     (Estadisticas
         (calcularPuntuacionMedia correcciones)
-        0
+        (calcularNumeroMedioPreguntasRespondidas correcciones (cogerNumeroPreguntas test))
 
         (calcularSuspensos correcciones)
         (calcularAprobados correcciones)
