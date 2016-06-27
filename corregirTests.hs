@@ -152,6 +152,7 @@ corrige (Test preguntas modelos) (RespuestaEstudiante identificador indiceModelo
             identificador
             (notaEstudiante (cogerPreguntasDelModelo preguntas (modelos !! (indiceModelo-1))) respuestas)
             (puntuacion10 (length preguntas) (notaEstudiante (cogerPreguntasDelModelo preguntas (modelos !! (indiceModelo-1))) respuestas))
+            []
         )
 
 {--
@@ -276,10 +277,10 @@ Getters - Métodos para coger atributos de corrección.
 --}
 
 cogerPuntuacionTotal :: Correccion -> Float
-cogerPuntuacionTotal (Correccion _ puntuacion _) = puntuacion
+cogerPuntuacionTotal (Correccion _ puntuacion _ _) = puntuacion
 
 cogerPuntuacionSobre10 :: Correccion -> Float
-cogerPuntuacionSobre10 (Correccion _ _ puntuacion10) = puntuacion10
+cogerPuntuacionSobre10 (Correccion _ _ puntuacion10 _) = puntuacion10
 
 estaSupenso :: Correccion -> Bool
 estaSupenso correccion = (cogerPuntuacionSobre10 correccion) < 5.0
