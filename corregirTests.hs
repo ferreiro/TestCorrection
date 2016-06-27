@@ -55,8 +55,8 @@ mostrarResultadosEstadisticas estadistica = do
     putStrLn("\n\tPreguntas:")
     putStrLn("\tPregunta con mejor resultado: " ++ (cogerPreguntaMejorResultado estadistica))
     putStrLn("\tPregunta con peor resultado: " ++ (cogerPreguntaPeorResultado estadistica))
-    putStrLn("\tPregunta mas contestada: " ++ (cogerPreguntaMasBlanca estadistica))
-    putStrLn("\tPregunta menos contestada: " ++ (cogerPreguntaMenosBlanca estadistica))
+    putStrLn("\tPregunta más veces dejada en blanco: " ++ (cogerPreguntaMasBlanca estadistica))
+    putStrLn("\tPregunta menos veces dejada en blanco: " ++ (cogerPreguntaMenosBlanca estadistica))
 
     -- putStrLn("\n\tAhora vamos :")
     -- putStrLn("\tFrecAbsRespuestasCorrectas: " ++ (cogerFrecAbsRespuestasCorrectas estadistica))
