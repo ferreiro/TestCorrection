@@ -19,8 +19,8 @@ modelos = [
 test = (Test preguntas modelos)
 
 respuestas = [
-    (RespuestaEstudiante "George" 1 [(Respuesta 2), (Respuesta 1), (Respuesta 1), (Respuesta 0), (Respuesta 1)])
-    , (RespuestaEstudiante "ABC-W" 1 [(Respuesta 2), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)]) ]
+    (RespuestaEstudiante "George" 1 [(Respuesta 2), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)])
+    , (RespuestaEstudiante "ABC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)]) ]
     -- , (RespuestaEstudiante "WWW-D" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)])
     -- , (RespuestaEstudiante "DSC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
     -- , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])]
@@ -55,8 +55,8 @@ mostrarResultadosEstadisticas estadistica = do
     putStrLn("\n\tPreguntas:")
     putStrLn("\tPregunta con mejor resultado: " ++ (cogerPreguntaMejorResultado estadistica))
     putStrLn("\tPregunta con peor resultado: " ++ (cogerPreguntaPeorResultado estadistica))
-    putStrLn("\tPregunta mas contestada: " ++ (cogerPreguntaMasContestada estadistica))
-    putStrLn("\tPregunta menos contestada: " ++ (cogerPreguntaMenosContestada estadistica))
+    putStrLn("\tPregunta mas contestada: " ++ (cogerPreguntaMasBlanca estadistica))
+    putStrLn("\tPregunta menos contestada: " ++ (cogerPreguntaMenosBlanca estadistica))
 
     -- putStrLn("\n\tAhora vamos :")
     -- putStrLn("\tFrecAbsRespuestasCorrectas: " ++ (cogerFrecAbsRespuestasCorrectas estadistica))
@@ -387,13 +387,21 @@ calcularSobresalientes x = length(filter (>=9) (map cogerNotaObtenida x))
 
 
 
-conseguirRespuestaMejorResultado :: [Correccion] -> Int
-conseguirRespuestaMejorResultado correcciones =
+conseguirPreguntaMejorResultado :: [Correccion] -> Int
+conseguirPreguntaMejorResultado correcciones =
     1 + maybeToInt(findIndex (==maximum(sumarTodosLosResultados correcciones)) (sumarTodosLosResultados correcciones)) -- coges el valor con mayor número y luego buscas su indice en la lista y lo devuelves
 
-conseguirRespuestaPeorResultado :: [Correccion] -> Int
-conseguirRespuestaPeorResultado correcciones =
+conseguirPeorPeorResultado :: [Correccion] -> Int
+conseguirPeorPeorResultado correcciones =
     1 + maybeToInt(findIndex (==minimum(sumarTodosLosResultados correcciones)) (sumarTodosLosResultados correcciones)) -- coges el valor con mayor número y luego buscas su indice en la lista y lo devuelves
+
+conseguirPreguntaMasBlanca :: [Correccion] -> Int
+conseguirPreguntaMasBlanca correcciones =
+    1 + maybeToInt(findIndex (==maximum(sumarRespuestasEnBlanco correcciones)) (sumarRespuestasEnBlanco correcciones)) -- coges el valor con mayor número y luego buscas su indice en la lista y lo devuelves
+
+conseguirPreguntaMenosBlanca :: [Correccion] -> Int
+conseguirPreguntaMenosBlanca correcciones =
+    1 + maybeToInt(findIndex (==minimum(sumarRespuestasEnBlanco correcciones)) (sumarRespuestasEnBlanco correcciones)) -- coges el valor con mayor número y luego buscas su indice en la lista y lo devuelves
 
 {--
 Para calcular las preguntas más populares y menos, voy a hacer lo siguiente
@@ -404,7 +412,24 @@ sumarTodosLosResultados :: [Correccion] -> [Int]
 sumarTodosLosResultados correcciones =
   foldl1 (zipWith (+)) (map cogerTipoRespuesta correcciones)  -- Sumar lista de listas en una
 
+sumarRespuestasEnBlanco :: [Correccion] -> [Int]
+sumarRespuestasEnBlanco correcciones =
+  foldl1 (zipWith (+)) (map dejarRespuestasEnBlanco (map cogerTipoRespuesta correcciones))  -- Sumar lista de listas en una
 
+-- Quitar aquellas respuestas que son -1, 1.
+-- Sabemos que las respuestas no contestadas son aquellas que tienen un 0.
+-- Por tanto, lo que voy a hacer es para cada lista, quitar los aciertos y fallos
+-- poniendolo a 0, y poner a 1 la pregunta que no ha sido contestada
+dejarRespuestasEnBlanco :: [Int] -> [Int]
+dejarRespuestasEnBlanco x = map quedarmeConBlanco x
+
+quedarmeConBlanco :: Int -> Int
+quedarmeConBlanco x
+    | x == 0    = 1
+    | x == 1    = 0
+    | otherwise = 0
+
+-- zipWith (\x y -> 2*x + y) [1..4] [5..8]
 
 {--
 Estadísticas
@@ -430,8 +455,8 @@ data Estadisticas = Estadisticas {
     preguntaMejorResultado :: Int,
     preguntaPeorResultado :: Int,
 
-    preguntaMasContestada :: Int,
-    preguntaMenosContestada :: Int
+    preguntaMasBlanca :: Int,
+    preguntaMenosBlanca :: Int
 
 } deriving (Show)
 
@@ -453,11 +478,11 @@ estadisticas test respuestas =
         [0.0, 0.0, 0.0, 0.0]
         [0.0, 0.0, 0.0, 0.0]
 
-        (conseguirRespuestaMejorResultado correcciones)
-        (conseguirRespuestaPeorResultado correcciones)
+        (conseguirPreguntaMejorResultado correcciones)
+        (conseguirPeorPeorResultado correcciones)
 
-        0
-        0
+        (conseguirPreguntaMasBlanca correcciones)
+        (conseguirPreguntaMenosBlanca correcciones)
     )
     where correcciones = (corrige_todos test respuestas)
 
@@ -512,8 +537,8 @@ cogerPreguntaMejorResultado (Estadisticas _ _ _ _ _ _ _ _ _ _ _ _ pregunta _ _ _
 cogerPreguntaPeorResultado :: Estadisticas -> String
 cogerPreguntaPeorResultado (Estadisticas _ _ _ _ _ _ _ _ _ _ _ _ _ pregunta _ _) = show pregunta
 
-cogerPreguntaMasContestada :: Estadisticas -> String
-cogerPreguntaMasContestada (Estadisticas _ _ _ _ _ _ _ _ _ _ _ _ _ _ pregunta _) = show pregunta
+cogerPreguntaMasBlanca :: Estadisticas -> String
+cogerPreguntaMasBlanca (Estadisticas _ _ _ _ _ _ _ _ _ _ _ _ _ _ pregunta _) = show pregunta
 
-cogerPreguntaMenosContestada :: Estadisticas -> String
-cogerPreguntaMenosContestada (Estadisticas _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ pregunta) = show pregunta
+cogerPreguntaMenosBlanca :: Estadisticas -> String
+cogerPreguntaMenosBlanca (Estadisticas _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ pregunta) = show pregunta
