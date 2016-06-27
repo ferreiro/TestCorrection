@@ -7,7 +7,7 @@ import Data.Char
 
 preguntas = [
       (Pregunta 1 2)
-    , (Pregunta 1 2)
+    , (Pregunta 1 6)
     , (Pregunta 1 2)
     , (Pregunta 1 2)
     , (Pregunta 1 2) ]
@@ -19,8 +19,8 @@ modelos = [
 test = (Test preguntas modelos)
 
 respuestas = [
-    (RespuestaEstudiante "George" 2 [(Respuesta 0), (Respuesta 0), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
-    , (RespuestaEstudiante "ABC-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)]) ]
+    (RespuestaEstudiante "George" 1 [(Respuesta 2), (Respuesta 1), (Respuesta 1), (Respuesta 0), (Respuesta 1)])
+    , (RespuestaEstudiante "ABC-W" 1 [(Respuesta 2), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)]) ]
     -- , (RespuestaEstudiante "WWW-D" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)])
     -- , (RespuestaEstudiante "DSC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
     -- , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])]
@@ -230,9 +230,9 @@ que todas las correcciones están ordenadas de la misma manera y no según el ti
 Dado un conjunto de respuestas ORDENADAS según nuestro test (y no según nuestro modelo de examen),
 devuelve una lista de enteros con la respuestas corregidas donde cada elemento puede tener estos valores:
 
+-1 = Pregunta fallada
 0 = Pregunta no contestada
 1 = Pregunta acertada
-2 = Pregunta fallada
 
 Parametros entrada:
 - Lista de preguntas (ordenadas según el test y NO según el modelo)
@@ -252,7 +252,7 @@ respuestaCorrecta :: Pregunta -> Respuesta -> Int
 respuestaCorrecta (Pregunta respuestaCorrecta opciones) (Respuesta respuestaUsuario)
     | respuestaUsuario == 0                   = 0 -- Respuesta no contestada
     | respuestaCorrecta == respuestaUsuario   = 1 -- respuesta acertada
-    | otherwise                               = 2 -- respuesta fallada
+    | otherwise                               = (-1) -- respuesta fallada
 
 {--
 La misión de esta función es dado un conjunto de respuestas y un modelo,
@@ -349,6 +349,7 @@ Funciones auxiliares para las estadísticas:
 calcularPuntuacionMedia :: [Correccion] -> Float
 calcularPuntuacionMedia correccion =
     (sumarPuntuaciones correccion) / fromIntegral( length(correccion) )
+
 -- Función auxiliar para calcularPuntuacionMedia
 sumarPuntuaciones :: [Correccion] -> Float
 sumarPuntuaciones [] = 0.0
@@ -383,6 +384,27 @@ calcularNotables x = length(filter (>=7) ((filter (<9)(map cogerNotaObtenida x))
 
 calcularSobresalientes :: [Correccion] -> Int
 calcularSobresalientes x = length(filter (>=9) (map cogerNotaObtenida x))
+
+
+
+conseguirRespuestaMejorResultado :: [Correccion] -> Int
+conseguirRespuestaMejorResultado correcciones =
+    1 + maybeToInt(findIndex (==maximum(sumarTodosLosResultados correcciones)) (sumarTodosLosResultados correcciones)) -- coges el valor con mayor número y luego buscas su indice en la lista y lo devuelves
+
+conseguirRespuestaPeorResultado :: [Correccion] -> Int
+conseguirRespuestaPeorResultado correcciones =
+    1 + maybeToInt(findIndex (==minimum(sumarTodosLosResultados correcciones)) (sumarTodosLosResultados correcciones)) -- coges el valor con mayor número y luego buscas su indice en la lista y lo devuelves
+
+{--
+Para calcular las preguntas más populares y menos, voy a hacer lo siguiente
+Sumar todas las respuestas en una lista y en base a eso, quedarme con los
+valores con mayor o menor valor
+--}
+sumarTodosLosResultados :: [Correccion] -> [Int]
+sumarTodosLosResultados correcciones =
+  foldl1 (zipWith (+)) (map cogerTipoRespuesta correcciones)  -- Sumar lista de listas en una
+
+
 
 {--
 Estadísticas
@@ -431,8 +453,8 @@ estadisticas test respuestas =
         [0.0, 0.0, 0.0, 0.0]
         [0.0, 0.0, 0.0, 0.0]
 
-        0
-        0
+        (conseguirRespuestaMejorResultado correcciones)
+        (conseguirRespuestaPeorResultado correcciones)
 
         0
         0
