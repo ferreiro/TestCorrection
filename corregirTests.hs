@@ -19,8 +19,8 @@ modelos = [
 test = (Test preguntas modelos)
 
 respuestas = [
-    (RespuestaEstudiante "George" 2 [(Respuesta 1), (Respuesta 1), (Respuesta 33), (Respuesta 0), (Respuesta 0)]) ]
-    --   (RespuestaEstudiante "ABC-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])
+    (RespuestaEstudiante "George" 2 [(Respuesta 0), (Respuesta 0), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
+    , (RespuestaEstudiante "ABC-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)]) ]
     -- , (RespuestaEstudiante "WWW-D" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)])
     -- , (RespuestaEstudiante "DSC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
     -- , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])]
@@ -47,7 +47,7 @@ mostrarResultadosEstadisticas estadistica = do
     putStrLn("\tEl " ++ (cogerMediaRespuestas estadistica) ++ "% de las preguntas han sido contestadas")
 
     putStrLn("\n\t¿Cómo han ido tus alumnos?:")
-    putStrLn("\t" ++ (cogerSuspensos estadistica) ++ " alumnos han sacado notable.")
+    putStrLn("\t" ++ (cogerSuspensos estadistica) ++ " alumnos han suspendido.")
     putStrLn("\t" ++ (cogerAprobados estadistica) ++ " alumnos han aprobado.")
     putStrLn("\t" ++ (cogerNotables estadistica) ++ " alumnos han sacado notable.")
     putStrLn("\t" ++ (cogerSobresalientes estadistica) ++ " alumnos lo han bordado con un sobresaliente!.")
@@ -162,10 +162,21 @@ corrige (Test preguntas modelos) (RespuestaEstudiante identificador indiceModelo
             (rellenarTipoRespuesta preguntas (generarRespuestasOrdenadas respuestas (modelos !! (indiceModelo-1)))) -- Convertimos un modelo desordenado en una lista ordenada
         )
 
+{--
+Getters - Métodos para coger atributos de corrección.
+--}
+
 cogerTipoRespuesta :: Correccion -> [Int]
 cogerTipoRespuesta (Correccion _ _ _ tipoRespuesta) =  tipoRespuesta
 
+cogerNotaObtenida :: Correccion -> Float
+cogerNotaObtenida (Correccion _ _ puntuacion10 _) =  puntuacion10
 
+cogerPuntuacionTotal :: Correccion -> Float
+cogerPuntuacionTotal (Correccion _ puntuacion _ _) = puntuacion
+
+cogerPuntuacionSobre10 :: Correccion -> Float
+cogerPuntuacionSobre10 (Correccion _ _ puntuacion10 _) = puntuacion10
 
 {--
 Como hemos podido observar en la función anterior, necesitamos uan lista de preguntas
@@ -205,7 +216,6 @@ cogerPreguntasDadoOrden (preguntas) (indice:restoIndices) =
 
 cogerOrdenPreguntas :: Modelo -> [Int]
 cogerOrdenPreguntas (Modelo ordenPreguntas) = ordenPreguntas
-
 
 {--
 Ahora tenemos que hacer unas funciones que sean capaces de rellenas el campo
@@ -273,29 +283,6 @@ indiceRespuestaEnModelo x ordenModelo = maybeToInt(findIndex (==x) ordenModelo)
 maybeToInt :: Maybe Int -> Int
 maybeToInt a = digitToInt ((show a) !! 5)
 
-
-
-
-
-
-
--- numeroTotalPreguntasRespondidas :: [Correccion] -> Int
--- numeroTotalPreguntasRespondidas [] = 0
--- numeroTotalPreguntasRespondidas (x:correcciones) =
---   respuestasRespondidasEstudiante x + numeroTotalPreguntasRespondidas correcciones
---
--- respuestasRespondidasEstudiante :: Correccion -> Int
--- respuestasRespondidasEstudiante (Correccion _ _ _ tipoRespuesta) =
---   length(filter (>0) tipoRespuesta) -- Cogemos respuestas del tipo 1 o 2 (es decir, o correctas o falsas) excepto aquellas no contestadas
-
-
--- -- Le pasas las preguntas tal cual las tenemos almacenadas en nuestro test y cogemos la respuesta para nuestro modelo
--- convertirRespuestas :: [Pregunta] -> [Respuesta] -> [Int]
---
-
-
-
-
 {--
 Para calcular la nota de un estudiante vamos a necesitar dos funciones:
 
@@ -350,37 +337,6 @@ puntuacion10 numeroPreguntas notaObtenida
         where notaTotal = (10.0 * notaObtenida) / fromIntegral numeroPreguntas
 
 {--
-Getters - Métodos para coger atributos de corrección.
---}
-
-cogerPuntuacionTotal :: Correccion -> Float
-cogerPuntuacionTotal (Correccion _ puntuacion _ _) = puntuacion
-
-cogerPuntuacionSobre10 :: Correccion -> Float
-cogerPuntuacionSobre10 (Correccion _ _ puntuacion10 _) = puntuacion10
-
-estaSupenso :: Correccion -> Bool
-estaSupenso correccion = (cogerPuntuacionSobre10 correccion) < 5.0
-
-estaAprobado :: Correccion -> Bool
-estaAprobado correccion
-    | puntuacion >= 5.0 && puntuacion < 7.0     = True
-    | otherwise                                 = False
-    where puntuacion = (cogerPuntuacionSobre10 correccion)
-
-estaNotable :: Correccion -> Bool
-estaNotable correccion
-    | puntuacion >= 7.0 && puntuacion < 9.0     = True
-    | otherwise                                 = False
-    where puntuacion = (cogerPuntuacionSobre10 correccion)
-
-estaSobresaliente :: Correccion -> Bool
-estaSobresaliente correccion
-    | puntuacion >= 9.0                         = True
-    | otherwise                                 = False
-    where puntuacion = (cogerPuntuacionSobre10 correccion)
-
-{--
 Funciones auxiliares para las estadísticas:
 1. tuacionMedia.
     Calcula las puntaciones media de toda la lista de correcciones.
@@ -417,32 +373,16 @@ calcularRespuestasContestadas :: [Int] -> Int
 calcularRespuestasContestadas respuestas = length(filter (>0) respuestas) -- coge aquellas preguntas que sí han sido contestada (1==correcta|2==fallo)
 
 calcularSuspensos :: [Correccion] -> Int
-calcularSuspensos [] = 0
-calcularSuspensos (x:xs)
-    | suspenso == True     = 1 + (calcularSuspensos xs)
-    | otherwise            = 0 + (calcularSuspensos xs)
-    where suspenso = estaSupenso x
+calcularSuspensos x = length((filter (<5) (map cogerNotaObtenida x) ))
 
 calcularAprobados :: [Correccion] -> Int
-calcularAprobados [] = 0
-calcularAprobados (x:xs)
-    | aprobado == True     = 1 + (calcularAprobados xs)
-    | otherwise            = 0 + (calcularAprobados xs)
-    where aprobado = estaAprobado x
+calcularAprobados x = length(filter (>=5) ((filter (<7)(map cogerNotaObtenida x))))
 
 calcularNotables :: [Correccion] -> Int
-calcularNotables [] = 0
-calcularNotables (x:xs)
-    | notable == True       = 1 + (calcularNotables xs)
-    | otherwise             = 0 + (calcularNotables xs)
-    where notable = estaNotable x
+calcularNotables x = length(filter (>=7) ((filter (<9)(map cogerNotaObtenida x))))
 
 calcularSobresalientes :: [Correccion] -> Int
-calcularSobresalientes [] = 0
-calcularSobresalientes (x:xs)
-    | sobresaliente == True   = 1 + (calcularSobresalientes xs)
-    | otherwise               = 0 + (calcularSobresalientes xs)
-    where sobresaliente = estaSobresaliente x
+calcularSobresalientes x = length(filter (>=9) (map cogerNotaObtenida x))
 
 {--
 Estadísticas
