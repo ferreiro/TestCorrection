@@ -1,40 +1,18 @@
 import Data.List
 import Data.Char
 
----------------------------------------
--- EJEMPLOS ---------------------------
----------------------------------------
-
-preguntas = [
-      (Pregunta 1 2)
-    , (Pregunta 1 6)
-    , (Pregunta 1 2)
-    , (Pregunta 1 2)
-    , (Pregunta 1 2) ]
-
-modelos = [
-      (Modelo [1, 2, 3, 4, 5])
-    , (Modelo [5, 4, 3, 2, 1])]
-
-test = (Test preguntas modelos)
-
-respuestas = [
-    (RespuestaEstudiante "George" 1 [(Respuesta 2), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)])
-    , (RespuestaEstudiante "ABC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
-    , (RespuestaEstudiante "WWW-D" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)]) ]
-    -- , (RespuestaEstudiante "DSC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
-    -- , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])]
-
-_correcciones = (corrige_todos test respuestas)
-_estadisticas = estadisticas test respuestas
-
-mostrar = mostrarResultadosEstadisticas _estadisticas
-
 ------------------------------------------------------------------
 -- PARTE OPCIONAL: INTERACCIÓN CON EL USUARIO --------------------
 ------------------------------------------------------------------
 
--- Mostrar las estadisticas de un usuario en la pantalla
+
+-- Pedir nombre del cliente y mostrar las estadisticas de un examen en la pantalla
+-- Si quieres ejecutar el programa en tu ordenador y ver los resultados del test
+-- simplemente ejecuta la función mostrar (_estadisticas es un dato de prueba
+-- que he generado, puedes verlo más detenidamente en el siguiente bloque)
+
+
+mostrar = mostrarResultadosEstadisticas _estadisticas
 
 mostrarResultadosEstadisticas :: Estadisticas -> IO()
 mostrarResultadosEstadisticas estadistica = do
@@ -69,12 +47,37 @@ mostrarResultadosEstadisticas estadistica = do
     putStrLn("\tFrecRelRespuestasErroneas: " ++ (cogerFrecRelRespuestasErroneas estadistica))
     putStrLn("\tFrecAbsRespuestasBlancos: " ++ (cogerFrecAbsRespuestasBlancos estadistica))
     putStrLn("\tFrecRelRespuestasBlancos: " ++ (cogerFrecRelRespuestasBlancos estadistica))
-
     putStrLn("\n")
 
----------------------------------------
--- DATA STRUCTURES --------------------
----------------------------------------
+
+-----------------------------------------------
+-- DATOS DE PRUEBA ----------------------------
+------------------------------------------------
+
+
+-- Estos son los datos de prueba que he generado.
+-- En total tenemos 5 preguntas. 2 modelos diferentes de examenes. 1 Test.
+-- y 3 respuestas de diferentes estudiantes.
+
+-- Para saber qué significado tiene cada elemento en el tipo de dato,
+-- puedes buscar el tipo de dato en el programa y ver sus parámetros.
+
+
+preguntas = [ (Pregunta 1 2), (Pregunta 1 6), (Pregunta 1 2), (Pregunta 1 2), (Pregunta 1 2) ]
+modelos = [ (Modelo [1, 2, 3, 4, 5]), (Modelo [5, 4, 3, 2, 1])]
+test = (Test preguntas modelos)
+
+respuestas = [
+      (RespuestaTest "George" 1 [(Respuesta 2), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)])
+    , (RespuestaTest "ABC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
+    , (RespuestaTest "WWW-D" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)]) ]
+
+_correcciones = (corrige_todos test respuestas)
+_estadisticas = estadisticas test respuestas
+
+--------------------------------------------
+-- ESTRUCTURAS DE DATOS --------------------
+--------------------------------------------
 
 {--
 Cada Test tiene una lista de Preguntas y otra lista de Modelos de examen.
@@ -120,7 +123,7 @@ Seguiré la siguiente convención para los valores de las respuestas:
 - >0 (respuesta contestada).
 --}
 
-data RespuestaEstudiante = RespuestaEstudiante {
+data RespuestaTest = RespuestaTest {
     identificador :: String,
     modelo :: Int,
     respuestas_estudiante :: [Respuesta]
@@ -152,13 +155,13 @@ data Correccion = Correccion {
     tipoRespuesta :: [Int] -- Para cada pregunta, 0= No respondida | 1 = Acertada | 2 = Fallada
 }  deriving (Show)
 
-corrige_todos :: Test -> [RespuestaEstudiante] -> [Correccion]
+corrige_todos :: Test -> [RespuestaTest] -> [Correccion]
 corrige_todos _ [] = []
 corrige_todos test (x: xs) =
         corrige test x : corrige_todos test xs
 
-corrige :: Test -> RespuestaEstudiante -> Correccion
-corrige (Test preguntas modelos) (RespuestaEstudiante identificador indiceModelo respuestas) =
+corrige :: Test -> RespuestaTest -> Correccion
+corrige (Test preguntas modelos) (RespuestaTest identificador indiceModelo respuestas) =
         (Correccion
             identificador
             (notaEstudiante (cogerPreguntasDelModelo preguntas (modelos !! (indiceModelo-1))) respuestas)
@@ -220,6 +223,60 @@ cogerPreguntasDadoOrden (preguntas) (indice:restoIndices) =
 
 cogerOrdenPreguntas :: Modelo -> [Int]
 cogerOrdenPreguntas (Modelo ordenPreguntas) = ordenPreguntas
+
+
+{--
+Para calcular la nota de un estudiante vamos a necesitar dos funciones:
+
+1. notaEstudiante:
+  Esta función calcula la nota final obtenida por el estudiante.
+  Recibe 2 paramétros:
+    - Una lista de Preguntas del test (que tienen el número de opciones y la respuesta válida).
+    - Una lista de respuestas dadas por el estudiante.
+  Devuelve:
+    - La nota total obtenida por el estudiante. Para ello, en cada llamada
+      recursiva coge la primera pregunta y la primera respuesta de ambas listas y
+      llama a notaPregunta para obtener la puntuación para esa pregunta. Luego,
+      sumará esa puntuación junto con el resto de la lista, por lo que hará una
+      llamada recursiva a la misma función pero con el resto de elementos de la lista.
+
+2. notaPregunta:
+  Recibe 2 paramétros:
+    - Una pregunta del test (con el número de respuesta correcta y numero de opciones)
+    - Una respuesta del estudiante (que será un valor
+      entero desde 0 a N - siendo N el número máximo de opciones).
+  Devuelve:
+    - La puntuación obtenida para esa pregunta. Puede ser:
+        * 1 si es correcta
+        * 0 si no la ha contestado
+        * -1/(N-1) si es incorrecta
+
+3. NotaSobre10:
+  Transforma la nota obtenida en una nota sobre 10.
+  Para ello necesita el número de preguntas y la nota sacada para luego
+  aplicar una regla de 3.
+--}
+
+notaEstudiante :: [Pregunta] -> [Respuesta] -> Float
+notaEstudiante [] _ = 0.0
+notaEstudiante _ [] = 0.0
+notaEstudiante (pregunta:preguntas) (respuesta:respuestas) =
+        (notaPregunta pregunta respuesta) + (notaEstudiante preguntas respuestas)
+
+notaPregunta :: Pregunta -> Respuesta -> Float
+notaPregunta (Pregunta respuestaCorrecta opciones) (Respuesta respuestaEstudiante)
+        | respuestaEstudiante == 0                  = 0.0 -- Respuesta en Blanco
+        | respuestaEstudiante == respuestaCorrecta  = 1.0 -- Respuesta correcta
+        | otherwise                                 = (-1.0) / (fromIntegral opciones - 1.0) -- Respuesta incorrecta, fórmula -1/(N-1) [Siendo N el número de alternativas]
+
+puntuacion10 :: Int -> Float -> Float
+puntuacion10 numeroPreguntas notaObtenida
+        -- Número máximo de puntos posibles sería el numero de preguntas (ganas 1 punto por cada pregunta)
+        -- maxPuntosPosible ______ 10 nota maxima
+        -- puntosObtenidos ______ X nota sobre 10 --}
+        | notaTotal <= 0      = 0
+        | otherwise           = notaTotal
+        where notaTotal = (10.0 * notaObtenida) / fromIntegral numeroPreguntas
 
 {--
 Ahora tenemos que hacer unas funciones que sean capaces de rellenas el campo
@@ -286,59 +343,6 @@ indiceRespuestaEnModelo x ordenModelo = maybeToInt(findIndex (==x) ordenModelo)
 
 maybeToInt :: Maybe Int -> Int
 maybeToInt a = digitToInt ((show a) !! 5)
-
-{--
-Para calcular la nota de un estudiante vamos a necesitar dos funciones:
-
-1. notaEstudiante:
-  Esta función calcula la nota final obtenida por el estudiante.
-  Recibe 2 paramétros:
-    - Una lista de Preguntas del test (que tienen el número de opciones y la respuesta válida).
-    - Una lista de respuestas dadas por el estudiante.
-  Devuelve:
-    - La nota total obtenida por el estudiante. Para ello, en cada llamada
-      recursiva coge la primera pregunta y la primera respuesta de ambas listas y
-      llama a notaPregunta para obtener la puntuación para esa pregunta. Luego,
-      sumará esa puntuación junto con el resto de la lista, por lo que hará una
-      llamada recursiva a la misma función pero con el resto de elementos de la lista.
-
-2. notaPregunta:
-  Recibe 2 paramétros:
-    - Una pregunta del test (con el número de respuesta correcta y numero de opciones)
-    - Una respuesta del estudiante (que será un valor
-      entero desde 0 a N - siendo N el número máximo de opciones).
-  Devuelve:
-    - La puntuación obtenida para esa pregunta. Puede ser:
-        * 1 si es correcta
-        * 0 si no la ha contestado
-        * -1/(N-1) si es incorrecta
-
-3. NotaSobre10:
-  Transforma la nota obtenida en una nota sobre 10.
-  Para ello necesita el número de preguntas y la nota sacada para luego
-  aplicar una regla de 3.
---}
-
-notaEstudiante :: [Pregunta] -> [Respuesta] -> Float
-notaEstudiante [] _ = 0.0
-notaEstudiante _ [] = 0.0
-notaEstudiante (pregunta:preguntas) (respuesta:respuestas) =
-        (notaPregunta pregunta respuesta) + (notaEstudiante preguntas respuestas)
-
-notaPregunta :: Pregunta -> Respuesta -> Float
-notaPregunta (Pregunta respuestaCorrecta opciones) (Respuesta respuestaEstudiante)
-        | respuestaEstudiante == 0                  = 0.0 -- Respuesta en Blanco
-        | respuestaEstudiante == respuestaCorrecta  = 1.0 -- Respuesta correcta
-        | otherwise                                 = (-1.0) / (fromIntegral opciones - 1.0) -- Respuesta incorrecta, fórmula -1/(N-1) [Siendo N el número de alternativas]
-
-puntuacion10 :: Int -> Float -> Float
-puntuacion10 numeroPreguntas notaObtenida
-        -- Número máximo de puntos posibles sería el numero de preguntas (ganas 1 punto por cada pregunta)
-        -- maxPuntosPosible ______ 10 nota maxima
-        -- puntosObtenidos ______ X nota sobre 10 --}
-        | notaTotal <= 0      = 0
-        | otherwise           = notaTotal
-        where notaTotal = (10.0 * notaObtenida) / fromIntegral numeroPreguntas
 
 {--
 Funciones auxiliares para las estadísticas:
@@ -522,7 +526,7 @@ data Estadisticas = Estadisticas {
 
 } deriving (Show)
 
-estadisticas :: Test -> [RespuestaEstudiante] -> Estadisticas
+estadisticas :: Test -> [RespuestaTest] -> Estadisticas
 estadisticas test respuestas =
     (Estadisticas
         (calcularPuntuacionMedia correcciones)
