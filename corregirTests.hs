@@ -38,8 +38,12 @@ mostrar = mostrarResultadosEstadisticas _estadisticas
 
 mostrarResultadosEstadisticas :: Estadisticas -> IO()
 mostrarResultadosEstadisticas estadistica = do
+
+    putStrLn("\nHola! Cómo te llamas?")
+    nombre <- getLine
+
     putStrLn("\n")
-    putStrLn("\tBienvenido al corrector de notas inteligente.")
+    putStrLn("\tBienvenido " ++ nombre ++ " al corrector de notas inteligente.")
     putStrLn("\tEstos son los resultados de nuestra corrección automática.")
 
     putStrLn("\n\tBreve resumen:")
@@ -58,15 +62,15 @@ mostrarResultadosEstadisticas estadistica = do
     putStrLn("\tPregunta más veces dejada en blanco: " ++ (cogerPreguntaMasBlanca estadistica))
     putStrLn("\tPregunta menos veces dejada en blanco: " ++ (cogerPreguntaMenosBlanca estadistica))
 
-    -- putStrLn("\n\tAhora vamos :")
-    -- putStrLn("\tFrecAbsRespuestasCorrectas: " ++ (cogerFrecAbsRespuestasCorrectas estadistica))
-    -- putStrLn("\tFrecRelRespuestasCorrectas: " ++ (cogerFrecRelRespuestasCorrectas estadistica))
-    -- putStrLn("\tFrecAbsRespuestasErroneas: " ++ (cogerFrecAbsRespuestasErroneas estadistica))
-    -- putStrLn("\tFrecRelRespuestasErroneas: " ++ (cogerFrecRelRespuestasErroneas estadistica))
-    -- putStrLn("\tFrecAbsRespuestasBlancos: " ++ (cogerFrecAbsRespuestasBlancos estadistica))
-    -- putStrLn("\tFrecRelRespuestasBlancos: " ++ (cogerFrecRelRespuestasBlancos estadistica))
+    putStrLn("\n\t¿Curioso por saber las frecuencias de las respuestas? ¡Ahí van! :")
+    putStrLn("\tFrecAbsRespuestasCorrectas: " ++ (cogerFrecAbsRespuestasCorrectas estadistica))
+    putStrLn("\tFrecRelRespuestasCorrectas: " ++ (cogerFrecRelRespuestasCorrectas estadistica))
+    putStrLn("\tFrecAbsRespuestasErroneas: " ++ (cogerFrecAbsRespuestasErroneas estadistica))
+    putStrLn("\tFrecRelRespuestasErroneas: " ++ (cogerFrecRelRespuestasErroneas estadistica))
+    putStrLn("\tFrecAbsRespuestasBlancos: " ++ (cogerFrecAbsRespuestasBlancos estadistica))
+    putStrLn("\tFrecRelRespuestasBlancos: " ++ (cogerFrecRelRespuestasBlancos estadistica))
 
-    putStrLn("\n\tTienes que subscribirte a la versión de pago para ver el resto de estadísticas :).\n\t[Comprar versión de pago...]")
+    putStrLn("\n")
 
 ---------------------------------------
 -- DATA STRUCTURES --------------------
