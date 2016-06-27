@@ -80,18 +80,21 @@ _estadisticas = estadisticas test respuestas
 --------------------------------------------
 
 {--
-Cada Test tiene una lista de Preguntas y otra lista de Modelos de examen.
-Una pregunta tiene el número de opciones disponibles y el índice de la respuesta.
+Cada TEST tiene una lista de Preguntas y otra lista de Modelos de examen.
 
-Un modelo es una permutación de las preguntas. Esto significa, que cada Modelo
-tiene una lista de enteros llamada "orden". La misión de esta lista es
+- Una PREGUNTA tiene dos campos: el número de opciones disponibles y el índice
+de la respuesta correcta.
+
+- Un MODELO, es una permutación de las preguntas. Internamente he representado
+cada permutación como una lista de enteros, donde cada valor de los elementos
+nos dice el índice de la pregunta a la que hace referencia. La misión de esta lista es
 reflejar las permutaciones posibles. Cada elemento de la lista hace referencia
 a la lista "preguntas".
 
-Por tanto, tener un modelo [1, 2, 3] significa,
-que las preguntas están ordenadas. Si tenemos un modelo como [3, 2, 1],
-entonces la primera pregunta que leerá ese estudiante, será la tercera
-prefunta de la lista "preguntas".
+Por tanto, tener un modelo [1, 2, 3] significa, que las preguntas están ordenadas
+y que por tanto coindicden con la lista de preguntas_examen.
+Por el contrario, tener un modelo como [3, 2, 1], significa que la primera
+pregunta del modelo, es la tercera del examen y a lo mismo con el resto.
 --}
 
 data Test = Test {
@@ -105,22 +108,29 @@ data Pregunta = Pregunta {
 } deriving (Show)
 
 data Modelo = Modelo {
-    ordenPreguntas :: [Int] -- Orden de las preguntas del test (permutaciones) | Cada elemento indica el indice de la pregunta en "preguntas" de Test
+    permutacion :: [Int] -- Orden de las preguntas del test (permutaciones) | Cada elemento indica el indice de la pregunta en "preguntas" de Test
 } deriving (Show)
 
+-- Metodos auxiliares: getters
+-- Devuelve el número de Preguntas que tiene un Test
 cogerNumeroPreguntas :: Test -> Int
 cogerNumeroPreguntas (Test preguntas modelos) = length(preguntas)
+
+--Devuelve las permutaciones de preguntas que tiene un modelo
+cogerPermutaciones :: Modelo -> [Int]
+cogerPermutaciones (Modelo permutacion) = permutacion
 
 {--
 Ahora vamos a definir un tipo de datos para las respuestas.
 Cada respuesta tiene un identificador del estudiante (En mi caso, voy a utilizar
-el DNi de cada estudiante que será una cadena). Además de ello, necesitamos saber
-el modelo de examen (que nos servirá para corregir las respuestas dadas). Por último,
-necesitamos otra lista de respuestas introducidas por el usuario.
+el DNI/Nombre de cada estudiante que estará representado como una cadena).
+Además de ello, necesitamos tener una lista de respuestas introducidas por el
+estudianto y el número del modelo de examen (para poder corregir las preguntas
+correctamente).
 
 Seguiré la siguiente convención para los valores de las respuestas:
-- 0 (respuesta no contestada)
-- >0 (respuesta contestada).
+- 0 = el estudiante no ha contestado a la pregunta
+- >0 = la respuesta sí ha sido contestada
 --}
 
 data RespuestaTest = RespuestaTest {
@@ -134,32 +144,49 @@ data Respuesta = Respuesta {
 }  deriving (Show)
 
 {--
-En nuestro programa tenemos que poder corregir los tests de nuestros estudiantes.
-Para ello necesitamos tener una función que reciba el test y las respuestas dadas
-por el estudiante.
+Para poder corregir los tests de nuestros estudiantes, necesitamos tener una
+función que dado: un test, las respuestas del estudiante y el modelo de examen
+devuelva la corrección.
 
-Como cada estudiante puede responder un modelo de examen diferente. Entonces
-vamos a necesitar por un lado obtener una lista de preguntas que sigan el orden
-del modelo de examen que está respondiendo el usuario para posteriormente utilizar
-nuestra función notaEstudiante que recibe una lista de preguntas (las del modelo
-del examen) y una lista de respuestas dadas por el usuario y devuelve la nota obtenida.
+Una corrección está compuesta por:
+- identificadorAlumno = Cadena con el nombre o DNI del estudiante
+- puntuaciónTotal = Suma total de cada una de las preguntas
+- puntuacionSobre10 = Nota obtenida por el estudiante
+- respuestasOrdenadas = Es una lista ORDENADA en función de las preguntas
+  del test cuyos valores pueden ser:
+  (-1) = Pregunta fallada por el estudiante
+     0 = Pregunta no contestada
+     1 = Pregunta acertada por el estudiante
 
-Con el resultado de dicha función, vamos a poder obtener la corrección del usuario:
-Tanto: identificador del alumno, puntuaciónTotal y puntuación sobre 10.
+  [IMPORTANTE] Esta lista NO está ordenada según el modelo del examen.
+  Sino que está ordenada en función de la lista de preguntas que tiene un test.
+  Esto es una parte muy importante de mi programa, ya que gracias a ello,
+  luego puedo obtener las estadísticas de una manera bastante cómoda.
+
+  ¿Por qué opté por ordenarlo según el test y no el modelo? Porque en las
+  estadísticas queremos saber las frecuencias para cada pregunta. Por tanto,
+  si tenemos varios modelos, sería bastante lioso tener que estar continuamente
+  convirtiendo cada respuesta (aunque esto depende de cómo organices tu programa
+  y las estructuras de datos). En mi caso, de esta forma me ha funcionado y
+  estoy bastante contento.
 --}
 
 data Correccion = Correccion {
     identificadorAlumno :: String,
     puntuacionTotal :: Float,
     puntuacionSobre10 :: Float,
-    tipoRespuesta :: [Int] -- Para cada pregunta, 0= No respondida | 1 = Acertada | 2 = Fallada
+    respuestasOrdenadas :: [Int] -- Para cada pregunta, 0= No respondida | 1 = Acertada | 2 = Fallada
 }  deriving (Show)
 
+-- Corrige todos los examenes de varios alumnos.
+-- Recibe el test y las repuestas de los alumnos y
+-- devuelve una lista de correcciones para cada alumno.
 corrige_todos :: Test -> [RespuestaTest] -> [Correccion]
 corrige_todos _ [] = []
 corrige_todos test (x: xs) =
         corrige test x : corrige_todos test xs
 
+-- Función corrige un examen de un estudiante
 corrige :: Test -> RespuestaTest -> Correccion
 corrige (Test preguntas modelos) (RespuestaTest identificador indiceModelo respuestas) =
         (Correccion
@@ -170,11 +197,12 @@ corrige (Test preguntas modelos) (RespuestaTest identificador indiceModelo respu
         )
 
 {--
-Getters - Métodos para coger atributos de corrección.
+Métodos auxiliares para obtener atributos
+del tipo de Dato Corrección
 --}
 
 cogerTipoRespuesta :: Correccion -> [Int]
-cogerTipoRespuesta (Correccion _ _ _ tipoRespuesta) =  tipoRespuesta
+cogerTipoRespuesta (Correccion _ _ _ respuestasOrdenadas) =  respuestasOrdenadas
 
 cogerNotaObtenida :: Correccion -> Float
 cogerNotaObtenida (Correccion _ _ puntuacion10 _) =  puntuacion10
@@ -186,44 +214,28 @@ cogerPuntuacionSobre10 :: Correccion -> Float
 cogerPuntuacionSobre10 (Correccion _ _ puntuacion10 _) = puntuacion10
 
 {--
-Como hemos podido observar en la función anterior, necesitamos uan lista de preguntas
-para poder comprobar si la lista de respuestas del usuario es correcta.
+A continuación vamos a obtener una lista de preguntas que seguirá el
+orden de las permutaciones que tiene el modelo. Con esta lista de preguntas,
+podemos corregir las respuestas dadas por el estudiante.
 
-Por tanto, necesitamos obtener una lista de Preguntas para un modelo dado.
-Como el modelo es una lista de enteros que representan las permutaciones
-de preguntas, entonces tenemos que encontrar de devolver una lista de preguntas
-del testo pero con el orden que tiene el modelo.
-
-Para esto, necesitamos 3 funciones:
-  1. cogerPreguntasDelModelo
-     Recibe un test, un modelo de dicho test y devuelve una lista de preguntas.
-     Para ello llama a cogerPreguntasDadoOrden y le pasa la lista de preguntas
-     que tiene el test y el orden de preguntas del modelo de test.
-
-  2. cogerOrdenPreguntas.
-      Devuelve una lista de enteros, cuyos elementos representan el la pregunta
-      a la que se refiere nuestro modelo.
-
-  3. cogerPreguntasDadoOrden.
-      Recibe una lista de preguntas y el orden de las preguntas del modelo.
-      Por tanto, lo que devuelve es una lista de preguntas (que sigue el orden de nuestro modelo)
-
+El modelo cabe recordar es una lista de enteros que representan las permutaciones
+de las preguntas del test. Por tanto, en esta parte del programa, tendremos
+que hacer la conversión para obtener la lista de preguntas.
 --}
 
+-- Función Wrapper que devolverá una lista de preguntas
+-- ordenadas según la permutación del modelo
 cogerPreguntasDelModelo :: [Pregunta] -> Modelo -> [Pregunta]
 cogerPreguntasDelModelo preguntasDelTest modelo =
-   cogerPreguntasDadoOrden preguntasDelTest (cogerOrdenPreguntas modelo)
+   cogerPreguntasDadoOrden preguntasDelTest (cogerPermutaciones modelo)
 
--- va componiendo una lista de preguntas siguiente el orden dado
+-- Esta función va componiendo la lista de preguntas (que como te he
+-- comentado sigue el orden de las permutaciones del modelo)
 cogerPreguntasDadoOrden :: [Pregunta] -> [Int] -> [Pregunta]
 cogerPreguntasDadoOrden [] _ = []
 cogerPreguntasDadoOrden _ [] = []
 cogerPreguntasDadoOrden (preguntas) (indice:restoIndices) =
     (preguntas !! (indice - 1)) : (cogerPreguntasDadoOrden preguntas restoIndices)-- coger la pregunta
-
-cogerOrdenPreguntas :: Modelo -> [Int]
-cogerOrdenPreguntas (Modelo ordenPreguntas) = ordenPreguntas
-
 
 {--
 Para calcular la nota de un estudiante vamos a necesitar dos funciones:
@@ -280,7 +292,7 @@ puntuacion10 numeroPreguntas notaObtenida
 
 {--
 Ahora tenemos que hacer unas funciones que sean capaces de rellenas el campo
-de tipoRespuesta. ¿Por qué necesitamos este campo?
+de respuestasOrdenadas. ¿Por qué necesitamos este campo?
 
 Porque con la estructura de mi programa, es la manera más facil para luego
 poder obtener las estadísticas. La idea es coger las respuestas dadas para un modelo
@@ -316,8 +328,8 @@ respuestaCorrecta (Pregunta respuestaCorrecta opciones) (Respuesta respuestaUsua
     | otherwise                               = (-1) -- respuesta fallada
 
 {--
-La misión de esta función es dado un conjunto de respuestas y un modelo,
-entonces ordena dichas respuestas (que vendría en el orden que ha impuesto el modelo)
+También necesitamos una función que dado un conjunto de respuestas y un modelo,
+ordene dichas respuestas (que vendría en el orden que ha impuesto el modelo)
 y las ordena según el orden en el que hemos declarado nosotros las preguntas
 de nuestro test. Es decir, es una función conversora partiendo de respuestas
 en el orden del modelo y devolviendo respuestas en el orden de nuestro test.
