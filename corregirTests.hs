@@ -19,7 +19,7 @@ modelos = [
 test = (Test preguntas modelos)
 
 respuestas = [
-    (RespuestaEstudiante "George" 2 [(Respuesta 0), (Respuesta 1), (Respuesta 2), (Respuesta 3), (Respuesta 4)]) ]
+    (RespuestaEstudiante "George" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 2), (Respuesta 3), (Respuesta 4)]) ]
     --   (RespuestaEstudiante "ABC-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])
     -- , (RespuestaEstudiante "WWW-D" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)])
     -- , (RespuestaEstudiante "DSC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
@@ -226,6 +226,14 @@ luego a la hora de hacer las estadísticas será mucho más cómodo).
 {--
 Te dan una lista de respuestas del usuario y una lista ordenada [1, 2, 3].
 Vamos consumiendo cada elemento de la lista ordenada y con ese, accedemos
+--}
+
+{--
+La misión de esta función es dado un conjunto de respuestas y un modelo,
+entonces ordena dichas respuestas (que vendría en el orden que ha impuesto el modelo)
+y las ordena según el orden en el que hemos declarado nosotros las preguntas
+de nuestro test. Es decir, es una función conversora partiendo de respuestas
+en el orden del modelo y devolviendo respuestas en el orden de nuestro test.
 --}
 
 generarRespuestasOrdenadas :: [Respuesta] -> Modelo -> [Respuesta]
