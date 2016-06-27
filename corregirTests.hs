@@ -1,3 +1,10 @@
+{--
+Autor: Jorge García Ferreiro
+Grupo GII
+
+Este código es fruto únticamente del trabajo de su Autor. 
+--}
+
 import Data.List
 import Data.Char
 
@@ -5,14 +12,13 @@ import Data.Char
 -- PARTE OPCIONAL: INTERACCIÓN CON EL USUARIO --------------------
 ------------------------------------------------------------------
 
-
--- Pedir nombre del cliente y mostrar las estadisticas de un examen en la pantalla
--- Si quieres ejecutar el programa en tu ordenador y ver los resultados del test
--- simplemente ejecuta la función mostrar (_estadisticas es un dato de prueba
--- que he generado, puedes verlo más detenidamente en el siguiente bloque)
-
+-- Si quieres ejecutar el programa en tu ordenador y ver los resultados del test simplemente
+-- ejecuta la función mostrar. _estadisticas es un dato de prueba que he generado y que puedes
+-- ver más detenidamente en el bloque "DATOS DE PRUEBA" que está a continuación de este.
 
 mostrar = mostrarResultadosEstadisticas _estadisticas
+
+-- Pedir nombre del cliente y mostrar las estadisticas de un examen en la pantalla
 
 mostrarResultadosEstadisticas :: Estadisticas -> IO()
 mostrarResultadosEstadisticas estadistica = do
