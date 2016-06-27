@@ -20,8 +20,8 @@ test = (Test preguntas modelos)
 
 respuestas = [
     (RespuestaEstudiante "George" 1 [(Respuesta 2), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)])
-    , (RespuestaEstudiante "ABC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)]) ]
-    -- , (RespuestaEstudiante "WWW-D" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)])
+    , (RespuestaEstudiante "ABC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
+    , (RespuestaEstudiante "WWW-D" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 0)]) ]
     -- , (RespuestaEstudiante "DSC-W" 1 [(Respuesta 0), (Respuesta 1), (Respuesta 0), (Respuesta 0), (Respuesta 0)])
     -- , (RespuestaEstudiante "414992032-W" 1 [(Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1), (Respuesta 1)])]
 
@@ -66,7 +66,7 @@ mostrarResultadosEstadisticas estadistica = do
     -- putStrLn("\tFrecAbsRespuestasBlancos: " ++ (cogerFrecAbsRespuestasBlancos estadistica))
     -- putStrLn("\tFrecRelRespuestasBlancos: " ++ (cogerFrecRelRespuestasBlancos estadistica))
 
-    putStrLn("\n\n\tTienes que subscribirte a la versión de pago para ver el resto de estadísticas :).\n\t[Comprar versión de pago...]")
+    putStrLn("\n\tTienes que subscribirte a la versión de pago para ver el resto de estadísticas :).\n\t[Comprar versión de pago...]")
 
 ---------------------------------------
 -- DATA STRUCTURES --------------------
@@ -387,6 +387,62 @@ calcularSobresalientes x = length(filter (>=9) (map cogerNotaObtenida x))
 
 
 
+
+calcularFrecuenciaRelativa :: Int -> [Float] -> [Float]
+calcularFrecuenciaRelativa tamanoMuestra frecuenciasAbsoluta =
+    map (\x -> x / fromIntegral(tamanoMuestra)) frecuenciasAbsoluta
+
+
+
+-- Frecuencia Absoluta de respuestas vacias
+calcularFrecuenciAbsolutaVacias :: [Correccion] -> [Float]
+calcularFrecuenciAbsolutaVacias correcciones =
+    foldl1 (zipWith (+)) (map dejarCorreccionVacias (map cogerTipoRespuesta correcciones))
+
+dejarCorreccionVacias :: [Int] -> [Float]
+dejarCorreccionVacias x = map quedarmeConVacias x
+
+quedarmeConVacias :: Int -> Float
+quedarmeConVacias x
+    | x == 0    = 1.0
+    | x == 1    = 0.0
+    | otherwise = 0.0
+
+
+-- Frecuencia Absoluta de  respuestas correctas
+calcularFrecuenciAbsolutaCorrectas :: [Correccion] -> [Float]
+calcularFrecuenciAbsolutaCorrectas correcciones =
+    foldl1 (zipWith (+)) (map dejarCorreccionCorrectas (map cogerTipoRespuesta correcciones))
+
+dejarCorreccionCorrectas :: [Int] -> [Float]
+dejarCorreccionCorrectas x = map quedarmeConCorrectas x
+
+quedarmeConCorrectas :: Int -> Float
+quedarmeConCorrectas x
+    | x == 0    = 0.0
+    | x == 1    = 1.0
+    | otherwise = 0.0
+
+-- Frecuencia Absoluta de  respuestas erroneas
+calcularFrecuenciAbsolutaErroneas :: [Correccion] -> [Float]
+calcularFrecuenciAbsolutaErroneas correcciones =
+    foldl1 (zipWith (+)) (map dejarCorreccionErroneas (map cogerTipoRespuesta correcciones))
+
+dejarCorreccionErroneas :: [Int] -> [Float]
+dejarCorreccionErroneas x = map quedarmeConErroneas x
+
+quedarmeConErroneas :: Int -> Float
+quedarmeConErroneas x
+    | x == 0    = 0.0
+    | x == 1    = 0.0
+    | otherwise = 1.0
+
+
+
+
+
+
+
 conseguirPreguntaMejorResultado :: [Correccion] -> Int
 conseguirPreguntaMejorResultado correcciones =
     1 + maybeToInt(findIndex (==maximum(sumarTodosLosResultados correcciones)) (sumarTodosLosResultados correcciones)) -- coges el valor con mayor número y luego buscas su indice en la lista y lo devuelves
@@ -408,13 +464,15 @@ Para calcular las preguntas más populares y menos, voy a hacer lo siguiente
 Sumar todas las respuestas en una lista y en base a eso, quedarme con los
 valores con mayor o menor valor
 --}
+
 sumarTodosLosResultados :: [Correccion] -> [Int]
 sumarTodosLosResultados correcciones =
-  foldl1 (zipWith (+)) (map cogerTipoRespuesta correcciones)  -- Sumar lista de listas en una
+    -- Esto se conoce como sumar une lista de listas
+    foldl1 (zipWith (+)) (map cogerTipoRespuesta correcciones)  -- Sumar lista de listas en una
 
 sumarRespuestasEnBlanco :: [Correccion] -> [Int]
 sumarRespuestasEnBlanco correcciones =
-  foldl1 (zipWith (+)) (map dejarRespuestasEnBlanco (map cogerTipoRespuesta correcciones))  -- Sumar lista de listas en una
+    foldl1 (zipWith (+)) (map dejarRespuestasEnBlanco (map cogerTipoRespuesta correcciones))  -- Sumar lista de listas en una
 
 -- Quitar aquellas respuestas que son -1, 1.
 -- Sabemos que las respuestas no contestadas son aquellas que tienen un 0.
@@ -471,13 +529,19 @@ estadisticas test respuestas =
         (calcularNotables correcciones)
         (calcularSobresalientes correcciones)
 
-        [0.0, 0.0, 0.0, 0.0]
-        [0.0, 0.0, 0.0, 0.0]
-        [0.0, 0.0, 0.0, 0.0]
-        [0.0, 0.0, 0.0, 0.0]
-        [0.0, 0.0, 0.0, 0.0]
-        [0.0, 0.0, 0.0, 0.0]
+        -- Primero calculamos las frecuencias absolutas-
+        -- La frecuencia relativa es el cociente entre la frecuencia absoluta
+        -- y el tamaño de la muestra (N) en nuestro caso la longitud de respuestas
+        frecuenciaAbsolutaCorrectas
+        (calcularFrecuenciaRelativa tamanoMuestra frecuenciaAbsolutaCorrectas)
 
+        frecuenciaAbsolutaErroneas
+        (calcularFrecuenciaRelativa tamanoMuestra frecuenciaAbsolutaCorrectas)
+
+        frecuenciaAbsolutaVacias
+        (calcularFrecuenciaRelativa tamanoMuestra frecuenciaAbsolutaCorrectas)
+
+        -- Mejores resultados y mas blancas
         (conseguirPreguntaMejorResultado correcciones)
         (conseguirPeorPeorResultado correcciones)
 
@@ -485,6 +549,10 @@ estadisticas test respuestas =
         (conseguirPreguntaMenosBlanca correcciones)
     )
     where correcciones = (corrige_todos test respuestas)
+          tamanoMuestra = length(respuestas)
+          frecuenciaAbsolutaCorrectas = (calcularFrecuenciAbsolutaCorrectas correcciones)
+          frecuenciaAbsolutaErroneas = (calcularFrecuenciAbsolutaErroneas correcciones)
+          frecuenciaAbsolutaVacias = (calcularFrecuenciAbsolutaVacias correcciones)
 
 
 {--
